@@ -1,4 +1,7 @@
 # Kudzu
+
+![Alt text](tmp/kudzu1.jpg?raw=true "Title")
+
 Kudzu is a Go based C2 platform with an emphasis on extensibility. 
 My goal was to provide a platform to which new scripts and exploits could be easily added and modified, and written in a modern language. 
 
