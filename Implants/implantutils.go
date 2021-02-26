@@ -22,7 +22,7 @@ type ImplantOps struct {
 func GenerateImplant(Ops ImplantOps) {
 	switch Ops.ImplantType {
 	case "cmd":
-		scriptbytes, err := ioutil.ReadFile("..\\Scripts\\simpleagent_cmd.kzs")
+		scriptbytes, err := ioutil.ReadFile("Scripts\\simpleagent_cmd.kzs")
 		if err != nil {
 			log.Println(err)
 		}
@@ -37,24 +37,24 @@ func GenerateImplant(Ops ImplantOps) {
 		}
 		tmpl.Execute(tmplbuf, filler)
 		tmpname := nodes.GenUID() + ".go"
-		tmpfile, err := os.Create("..\\tmp\\" + tmpname)
+		tmpfile, err := os.Create("tmp\\" + tmpname)
 		_, err = tmpfile.Write(tmplbuf.Bytes())
 		if err != nil {
 			log.Println(err)
 		}
-		buildcmd := exec.Command("go", "build", "-o", "..\\tmp\\"+Ops.FileName, "..\\tmp\\"+tmpname)
+		buildcmd := exec.Command("go", "build", "-o", "tmp\\"+Ops.FileName, "tmp\\"+tmpname)
 		err = buildcmd.Run()
 		if err != nil {
 			log.Println(err)
 		}
-		fmt.Printf("generated implant! check ../tmp/%s\n", Ops.FileName)
+		fmt.Printf("generated implant! check tmp/%s\n", Ops.FileName)
 		tmpfile.Close()
-		err = os.Remove("..\\tmp\\" + tmpname)
+		err = os.Remove("tmp\\" + tmpname)
 		if err != nil {
 			log.Println(err)
 		}
 	case "psh":
-		scriptbytes, err := ioutil.ReadFile("..\\Scripts\\simpleagent_psh.kzs")
+		scriptbytes, err := ioutil.ReadFile("Scripts\\simpleagent_psh.kzs")
 		if err != nil {
 			log.Println(err)
 		}
@@ -69,24 +69,24 @@ func GenerateImplant(Ops ImplantOps) {
 		}
 		tmpl.Execute(tmplbuf, filler)
 		tmpname := nodes.GenUID() + ".go"
-		tmpfile, err := os.Create("..\\tmp\\" + tmpname)
+		tmpfile, err := os.Create("tmp\\" + tmpname)
 		_, err = tmpfile.Write(tmplbuf.Bytes())
 		if err != nil {
 			log.Println(err)
 		}
-		buildcmd := exec.Command("go", "build", "-o", "..\\tmp\\"+Ops.FileName, "..\\tmp\\"+tmpname)
+		buildcmd := exec.Command("go", "build", "-o", "tmp\\"+Ops.FileName, "tmp\\"+tmpname)
 		err = buildcmd.Run()
 		if err != nil {
 			log.Println(err)
 		}
-		fmt.Printf("generated implant! check ../tmp/%s\n", Ops.FileName)
+		fmt.Printf("generated implant! check tmp/%s\n", Ops.FileName)
 		tmpfile.Close()
 		err = os.Remove("..\\tmp\\" + tmpname)
 		if err != nil {
 			log.Println(err)
 		}
 	case "kdzshell":
-		scriptbytes, err := ioutil.ReadFile("..\\Scripts\\kdzshell.kzs")
+		scriptbytes, err := ioutil.ReadFile("Scripts\\kdzshell.kzs")
 		if err != nil {
 			log.Println(err)
 		}
@@ -101,19 +101,19 @@ func GenerateImplant(Ops ImplantOps) {
 		}
 		tmpl.Execute(tmplbuf, filler)
 		tmpname := nodes.GenUID() + ".go"
-		tmpfile, err := os.Create("..\\tmp\\" + tmpname)
+		tmpfile, err := os.Create("tmp\\" + tmpname)
 		_, err = tmpfile.Write(tmplbuf.Bytes())
 		if err != nil {
 			log.Println(err)
 		}
-		buildcmd := exec.Command("go", "build", "-o", "..\\tmp\\"+Ops.FileName, "..\\tmp\\"+tmpname)
+		buildcmd := exec.Command("go", "build", "-o", "tmp\\"+Ops.FileName, "tmp\\"+tmpname)
 		err = buildcmd.Run()
 		if err != nil {
 			log.Println(err)
 		}
-		fmt.Printf("generated implant! check ../tmp/%s\n", Ops.FileName)
+		fmt.Printf("generated implant! check tmp/%s\n", Ops.FileName)
 		tmpfile.Close()
-		err = os.Remove("..\\tmp\\" + tmpname)
+		err = os.Remove("tmp\\" + tmpname)
 		if err != nil {
 			log.Println(err)
 		}

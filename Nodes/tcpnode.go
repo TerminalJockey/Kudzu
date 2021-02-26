@@ -78,7 +78,7 @@ func InteractNode(ID string) {
 				}
 				if sep[0] == "runscript" {
 					if len(sep) == 2 && sep[1] != "" && (strings.HasSuffix(sep[1], ".kzs") == true) {
-						scriptbytes, err := ioutil.ReadFile("..\\Scripts\\" + sep[1])
+						scriptbytes, err := ioutil.ReadFile("Scripts\\" + sep[1])
 						if err != nil {
 							log.Println(err)
 							fmt.Println("usage: runscript *.kzs")

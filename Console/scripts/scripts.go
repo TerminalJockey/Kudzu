@@ -9,8 +9,8 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/TerminalJockey/yaegi/interp"
-	"github.com/TerminalJockey/yaegi/stdlib"
+	"github.com/traefik/yaegi/interp"
+	"github.com/traefik/yaegi/stdlib"
 	"github.com/traefik/yaegi/stdlib/unrestricted"
 	"github.com/traefik/yaegi/stdlib/unsafe"
 )
@@ -20,7 +20,7 @@ func ScriptList(input ...string) {
 	switch len(input) {
 	case 1:
 		fmt.Println("listing all scripts: ")
-		scriptdir, err := os.Open("..\\Scripts")
+		scriptdir, err := os.Open("Scripts\\")
 		if err != nil {
 			log.Println(err)
 		}
