@@ -81,7 +81,7 @@ func GenerateImplant(Ops ImplantOps) {
 		}
 		fmt.Printf("generated implant! check tmp/%s\n", Ops.FileName)
 		tmpfile.Close()
-		err = os.Remove("..\\tmp\\" + tmpname)
+		err = os.Remove("tmp\\" + tmpname)
 		if err != nil {
 			log.Println(err)
 		}

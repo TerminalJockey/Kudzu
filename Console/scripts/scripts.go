@@ -47,7 +47,7 @@ func ScriptRun(scropts ScriptOps, input ...string) {
 	fmt.Println("Output:")
 	if strings.HasSuffix(input[1], ".kzs") == true {
 		//get template bytes
-		scriptbytes, err := ioutil.ReadFile("..\\Scripts\\" + input[1])
+		scriptbytes, err := ioutil.ReadFile("Scripts\\" + input[1])
 		if err != nil {
 			log.Println(err)
 		}
@@ -74,7 +74,7 @@ func ScriptRun(scropts ScriptOps, input ...string) {
 
 //ScriptGetOpts gets scripts from .kzs head, and returns struct for filling
 func ScriptGetOpts(input string) {
-	scriptbytes, err := ioutil.ReadFile("..\\Scripts\\" + input)
+	scriptbytes, err := ioutil.ReadFile("Scripts\\" + input)
 	if err != nil {
 		log.Println(err)
 	}
