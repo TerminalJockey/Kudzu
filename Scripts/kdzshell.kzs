@@ -20,6 +20,7 @@ import (
 
 	"github.com/traefik/yaegi/interp"
 	"github.com/traefik/yaegi/stdlib"
+	"github.com/traefik/yaegi/stdlib/syscall"
 	"github.com/traefik/yaegi/stdlib/unrestricted"
 	"github.com/traefik/yaegi/stdlib/unsafe"
 )
@@ -104,6 +105,7 @@ func interpret(scriptbytes []byte) {
 	i := interp.New(interp.Options{})
 	i.Use(stdlib.Symbols)
 	i.Use(unrestricted.Symbols)
+	i.Use(syscall.Symbols)
 	i.Use(unsafe.Symbols)
 	_, err := i.Eval(string(scriptbytes))
 	if err != nil {

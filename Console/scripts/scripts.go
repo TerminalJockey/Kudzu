@@ -11,6 +11,7 @@ import (
 
 	"github.com/traefik/yaegi/interp"
 	"github.com/traefik/yaegi/stdlib"
+	"github.com/traefik/yaegi/stdlib/syscall"
 	"github.com/traefik/yaegi/stdlib/unrestricted"
 	"github.com/traefik/yaegi/stdlib/unsafe"
 )
@@ -62,6 +63,7 @@ func ScriptRun(scropts ScriptOps, input ...string) {
 		})
 		i.Use(stdlib.Symbols)
 		i.Use(unrestricted.Symbols)
+		i.Use(syscall.Symbols)
 		i.Use(unsafe.Symbols)
 
 		_, err = i.Eval(string(tmplbuf.Bytes()))
