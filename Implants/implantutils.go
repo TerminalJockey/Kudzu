@@ -111,7 +111,8 @@ func GenerateImplant(Ops ImplantOps) {
 		if err != nil {
 			log.Println(err)
 		}
-		buildcmd := exec.Command("go", "build", `-ldflags="-s -w"`, "-o", "tmp/"+Ops.FileName, "tmp/"+tmpname)
+		
+		buildcmd := exec.Command("go", "build", "-o", "tmp/"+Ops.FileName, "tmp/"+tmpname)
 		buildcmd.Env = append(os.Environ(), "GOOS=windows", "GOARCH=amd64")
 		err = buildcmd.Run()
 		if err != nil {
