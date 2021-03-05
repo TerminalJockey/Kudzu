@@ -62,6 +62,9 @@ func GenerateImplant(Ops ImplantOps) {
 		//setup template buffer
 		tmplbuf := new(bytes.Buffer)
 		tmpl, err := template.New("").Parse(string(scriptbytes))
+		if err != nil {
+			log.Println(err)
+		}
 		type Filler struct {
 			Laddr string
 		}
