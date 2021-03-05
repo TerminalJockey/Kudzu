@@ -1,5 +1,6 @@
 /*{
 Name: KashDump
+Author: TerminalJockey
 Description: dumps lsass to file called lsa.dmp
 Options:
 None

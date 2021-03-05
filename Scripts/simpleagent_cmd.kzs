@@ -1,5 +1,6 @@
 /*{
 Description: Simple go reverse shell, provides cmd.exe over tcp
+Author: TerminalJockey
 Options:
 LHOST
 LPORT

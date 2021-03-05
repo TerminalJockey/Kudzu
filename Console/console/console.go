@@ -275,7 +275,8 @@ func ParseCLI(input string) {
 		switch cltag {
 		case "<kudzu nodes> ":
 			fmt.Println("Nodetype:", nodeopts.NodeType)
-			fmt.Println("Address:", nodeopts.Addr+":"+nodeopts.Port)
+			fmt.Println("Address:", nodeopts.Addr)
+			fmt.Println("Port:", nodeopts.Port)
 		case "<kudzu scripts> ":
 			fmt.Println("lhost:", scropts.LHOST)
 			fmt.Println("lport:", scropts.LPORT)

@@ -14,8 +14,8 @@ import (
 
 //ImplantOps holds values for implant options
 type ImplantOps struct {
-	ImplantType, FileName string
-	Listener              nodes.Listener
+	ImplantType, FileName, Arch string
+	Listener                    nodes.Listener
 }
 
 //GenerateImplant takes an ImplantOps struct and generates a new implant
@@ -43,6 +43,7 @@ func GenerateImplant(Ops ImplantOps) {
 			log.Println(err)
 		}
 		buildcmd := exec.Command("go", "build", "-o", "tmp/"+Ops.FileName, "tmp/"+tmpname)
+		buildcmd.Env = append(os.Environ(), "GOOS=windows", "GOARCH=amd64")
 		err = buildcmd.Run()
 		if err != nil {
 			log.Println(err)
@@ -75,6 +76,7 @@ func GenerateImplant(Ops ImplantOps) {
 			log.Println(err)
 		}
 		buildcmd := exec.Command("go", "build", "-o", "tmp/"+Ops.FileName, "tmp/"+tmpname)
+		buildcmd.Env = append(os.Environ(), "GOOS=windows", "GOARCH=amd64")
 		err = buildcmd.Run()
 		if err != nil {
 			log.Println(err)
@@ -107,6 +109,7 @@ func GenerateImplant(Ops ImplantOps) {
 			log.Println(err)
 		}
 		buildcmd := exec.Command("go", "build", `-ldflags="-s -w"`, "-o", "tmp/"+Ops.FileName, "tmp/"+tmpname)
+		buildcmd.Env = append(os.Environ(), "GOOS=windows", "GOARCH=amd64")
 		err = buildcmd.Run()
 		if err != nil {
 			log.Println(err)

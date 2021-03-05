@@ -1,5 +1,6 @@
 /*{
 Description: Kudzu shell. Provides access to kudzu scripts, cmd, and powershell. This was a bitch to make.
+Author: TerminalJockey
 Options:
 LHOST
 LPORT

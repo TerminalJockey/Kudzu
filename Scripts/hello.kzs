@@ -1,6 +1,6 @@
 /*{
-hello.kzs is a test script demonstrating Kudzu's use of go templates 
-and the yaegi interpreter.
+Description: hello.kzs is a test script demonstrating Kudzu's use of go templates and the yaegi interpreter.
+Author: TerminalJockey
 Options:
 LHOST
 RHOST
