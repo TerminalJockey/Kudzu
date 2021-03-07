@@ -1,4 +1,9 @@
 # Kudzu
+Find a bug? Have an idea for a feature? Need help tweaking scripts? Think this project is horrible? Let me know!
+
+Twitter: @TerminalJockey
+
+Email: TerminalJockey@protonmail.com
 
 ![Alt text](tmp/kudzu1.jpg?raw=true "Title")
 
