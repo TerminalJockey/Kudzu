@@ -67,6 +67,7 @@ func InteractNode(ID string) {
 				if err != nil {
 					log.Println("cli read err:", err)
 				}
+				clinput = strings.TrimSpace(clinput)
 				sep := strings.Split(strings.TrimSpace(clinput), " ")
 				if len(sep) == 1 && sep[0] == "kdz_bg" {
 					break out
@@ -92,7 +93,7 @@ func InteractNode(ID string) {
 					fmt.Println("usage: runscript *.kzs")
 					continue
 				}
-				_, err = Nodes[i].Conn.Write([]byte(clinput))
+				_, err = Nodes[i].Conn.Write([]byte(clinput + "\n"))
 				if err != nil {
 					break out
 				}
