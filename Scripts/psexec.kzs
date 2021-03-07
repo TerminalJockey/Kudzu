@@ -9,7 +9,8 @@ Options:
 	"Username":"",
 	"Password":"",
 	"Domain":".",
-	"Cmd":""
+	"Cmd":"",
+	"Hostname":""
 }
 }*/
 
