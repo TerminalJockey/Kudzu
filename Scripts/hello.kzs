@@ -1,10 +1,13 @@
 /*{
 Description: hello.kzs is a test script demonstrating Kudzu's use of go templates and the yaegi interpreter.
 Author: TerminalJockey
+Type:WinRemote
 Options:
-LHOST
-RHOST
-CMD
+{
+    "Lhost":"",
+    "Rhost":"",
+    "Cmd":""
+}
 }*/
 
 package main
@@ -13,7 +16,8 @@ import "fmt"
 
 func main() {
 	fmt.Println("Hello from kudzu!")
-    fmt.Println("{{.LHOST}}")
+    a := "{{.LHOST}}"
+    fmt.Println(a)
     fmt.Println("{{.RHOST}}")
     test := "{{.CMD}}"
     fmt.Println("CMD:", test)

@@ -15,6 +15,8 @@ import (
 var cltag = "<kudzu> "
 var curscript = ""
 var scropts scripts.ScriptOps
+var winlocalopts scripts.WinLocal
+var winremoteopts scripts.WinRemote
 var nodeopts nodes.NodeOpts = nodes.NodeOpts{
 	NodeType: "tcp",
 	Port:     "7896",
@@ -139,6 +141,12 @@ func ParseCLI(input string) {
 				fmt.Println("Run what? usage: run *.kzs")
 				return
 			}
+			if winlocalopts.Use == true {
+				scripts.ScriptRun(winlocalopts, sep...)
+			}
+			if winremoteopts.Use == true {
+				scripts.ScriptRun(winremoteopts, sep...)
+			}
 			scripts.ScriptRun(scropts, sep...)
 		//start listener with given options
 		case "<kudzu nodes> ":
@@ -178,8 +186,15 @@ func ParseCLI(input string) {
 		switch cltag {
 		case "<kudzu scripts> ":
 			if len(sep) == 2 && sep[1] != "" {
-				scripts.ScriptGetOpts(sep[1])
 				curscript = sep[1]
+				winlocalopts, winremoteopts = scripts.GetJsonStruct(sep[1])
+				if winlocalopts.Use == true {
+					fmt.Println("Local", winlocalopts)
+				}
+				if winremoteopts.Use == true {
+					fmt.Println("Remote", winremoteopts)
+				}
+
 			}
 		}
 	//set options for element
@@ -209,16 +224,68 @@ func ParseCLI(input string) {
 		case "<kudzu scripts> ":
 			switch sep[1] {
 			case "LHOST", "Lhost", "lhost":
-				scropts.LHOST = sep[2]
+				if winlocalopts.Use == true {
+					winlocalopts.Lhost = sep[2]
+				} else if winremoteopts.Use == true {
+					winremoteopts.Lhost = sep[2]
+				}
+
 			case "RHOST", "Rhost", "rhost":
-				scropts.RHOST = sep[2]
+				if winlocalopts.Use == true {
+					winlocalopts.Rhost = sep[2]
+				} else if winremoteopts.Use == true {
+					winremoteopts.Rhost = sep[2]
+				}
 			case "CMD", "cmd":
 				cmdarr := sep[2:]
 				scropts.CMD = strings.Join(cmdarr, " ")
+				if winlocalopts.Use == true {
+					winlocalopts.Cmd = strings.Join(sep[2:], " ")
+				} else if winremoteopts.Use == true {
+					winremoteopts.Cmd = strings.Join(sep[2:], " ")
+				}
 			case "LPORT", "lport", "Lport":
-				scropts.LPORT = sep[2]
+				if winlocalopts.Use == true {
+					winlocalopts.Lport = sep[2]
+				} else if winremoteopts.Use == true {
+					winremoteopts.Lport = sep[2]
+				}
 			case "RPORT", "rport", "Rport":
-				scropts.RPORT = sep[2]
+				if winlocalopts.Use == true {
+					winlocalopts.Rport = sep[2]
+				} else if winremoteopts.Use == true {
+					winremoteopts.Rport = sep[2]
+				}
+			case "Domain", "domain", "DOMAIN":
+				if winlocalopts.Use == true {
+					winlocalopts.Domain = sep[2]
+				} else if winremoteopts.Use == true {
+					winremoteopts.Domain = sep[2]
+				}
+			case "Username", "username", "USERNAME":
+				if winlocalopts.Use == true {
+					winlocalopts.Username = sep[2]
+				} else if winremoteopts.Use == true {
+					winremoteopts.Username = sep[2]
+				}
+			case "Password", "password", "PASSWORD":
+				if winlocalopts.Use == true {
+					winlocalopts.Password = sep[2]
+				} else if winremoteopts.Use == true {
+					winremoteopts.Password = sep[2]
+				}
+			case "NodeID", "Nodeid", "nodeid", "NODEID":
+				if winlocalopts.Use == true {
+					winlocalopts.NodeID = sep[2]
+				} else if winremoteopts.Use == true {
+					winremoteopts.NodeID = sep[2]
+				}
+			case "Hostname", "HOSTNAME", "HostName":
+				if winlocalopts.Use == true {
+					winlocalopts.Hostname = sep[2]
+				} else if winremoteopts.Use == true {
+					winremoteopts.Hostname = sep[2]
+				}
 			}
 		//manage node options struct
 		case "<kudzu nodes> ":
@@ -283,6 +350,9 @@ func ParseCLI(input string) {
 			fmt.Println("rhost:", scropts.RHOST)
 			fmt.Println("rport:", scropts.RPORT)
 			fmt.Println("cmd:", scropts.CMD)
+			fmt.Println("testing--")
+			fmt.Printf("winlocal: %+v\n", winlocalopts)
+			fmt.Printf("winremote: %+v\n", winremoteopts)
 		case "<kudzu implants> ":
 			fmt.Println("Filename", implantops.FileName)
 			fmt.Println("ImplantType:", implantops.ImplantType)
