@@ -2,7 +2,9 @@
 Description: win_calc.kzs will execute calc.exe via exec.Command on windows systems.
 Author: TerminalJockey
 Options:
-N/A
+{
+    "None":"N/A"
+}
 }*/
 
 package main

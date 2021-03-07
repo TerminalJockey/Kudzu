@@ -2,10 +2,9 @@
 Description: Because shit breaks when these are not properly formatted, heres a template!
 Author: TerminalJockey
 Options:
-LHOST
-RHOST
-CMD
-only choose what you need here
+{
+    "None":"N/A"
+}
 }*/
 
 package main

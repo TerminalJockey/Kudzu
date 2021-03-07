@@ -3,8 +3,9 @@ Name: psexec
 Author: TerminalJockey
 Description: modifies service executable on target machine, and starts service gaining code execution.Requires valid admin creds.
 Options:
-Filepath
-Keyname
+{
+	"Cmd":"calc.exe"
+}
 }*
 
 package main
@@ -42,7 +43,7 @@ func main() {
 		log.Println(err)
 	}
 
-	err = setStringValue(keyhandle, "", syscall.REG_SZ, "calc.exe")
+	err = setStringValue(keyhandle, "", syscall.REG_SZ, "{{.Cmd}}")
 	if err != nil {
 		log.Println(err)
 	}
