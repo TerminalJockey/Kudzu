@@ -17,6 +17,7 @@ var curscript = ""
 var scropts scripts.ScriptOps
 var winlocalopts scripts.WinLocal
 var winremoteopts scripts.WinRemote
+var webopts scripts.Web
 var nodeopts nodes.NodeOpts = nodes.NodeOpts{
 	NodeType: "tcp",
 	Port:     "7896",
@@ -182,19 +183,12 @@ func ParseCLI(input string) {
 
 		}
 	//display asset info
-	case "info":
+	case "load":
 		switch cltag {
 		case "<kudzu scripts> ":
 			if len(sep) == 2 && sep[1] != "" {
 				curscript = sep[1]
-				winlocalopts, winremoteopts = scripts.GetJsonStruct(sep[1])
-				if winlocalopts.Use == true {
-					fmt.Println("Local", winlocalopts)
-				}
-				if winremoteopts.Use == true {
-					fmt.Println("Remote", winremoteopts)
-				}
-
+				winlocalopts, winremoteopts, webopts = scripts.GetJsonStruct(sep[1])
 			}
 		}
 	//set options for element

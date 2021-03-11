@@ -31,7 +31,19 @@ func ScriptList(input ...string) {
 			log.Println(err)
 		}
 		for _, file := range files {
-			fmt.Println(file.Name())
+			if file.IsDir() == true {
+				curdir, err := os.Open("Scripts/" + file.Name())
+				if err != nil {
+					log.Println(err)
+				}
+				curfiles, err := curdir.ReadDir(0)
+				for _, f := range curfiles {
+					fmt.Println(file.Name() + "/" + f.Name())
+				}
+			} else {
+				fmt.Println(file.Name())
+			}
+
 		}
 	case 2:
 		if input[1] == "help" || input[1] == "-h" {
@@ -105,7 +117,8 @@ type ScriptOps struct {
 	LHOST, RHOST, CMD, LPORT, RPORT string
 }
 
-func GetJsonStruct(input string) (winlocal WinLocal, winremote WinRemote) {
+//GetJsonStruct extracts options from kdz script, and matches script type with appropriate struct. This was tricky without generics
+func GetJsonStruct(input string) (winlocal WinLocal, winremote WinRemote, web Web) {
 	scriptbytes, err := ioutil.ReadFile("Scripts/" + input)
 	if err != nil {
 		log.Println(err)
@@ -124,38 +137,55 @@ func GetJsonStruct(input string) (winlocal WinLocal, winremote WinRemote) {
 
 				scrtypearr := strings.Split(strings.TrimSpace(i), ":")
 				scrtype = scrtypearr[1]
-				fmt.Println(scrtype)
-				break
+				fmt.Println("Script Type:", scrtype)
+			}
+			if strings.HasPrefix(strings.TrimSpace(i), "Description") == true {
+				fmt.Println(i)
 			}
 		}
 	}
 	begin := bytes.Index(scriptbytes[intro+3:outtro], []byte("{"))
 	end := bytes.Index(scriptbytes[intro+3:outtro], []byte("}"))
-	fmt.Println("getjson", string(scriptbytes[begin:end+1]))
+	fmt.Println("Script Options:", string(scriptbytes[begin+5:end+1]))
 	switch scrtype {
 	case "WinLocal":
 		test := WinLocal{}
 		err := json.Unmarshal(scriptbytes[begin:end+1], &test)
 		if err != nil {
-			log.Println("unmarshal_winlocal:", err)
+			if err.Error() != "invalid character ':' looking for beginning of value" {
+				log.Println(err)
+			}
 		}
 		test.Use = true
-		fmt.Println(test)
-		return test, WinRemote{Use: false}
+
+		return test, WinRemote{Use: false}, Web{Use: false}
 	case "WinRemote":
 		test := WinRemote{}
 		err := json.Unmarshal(scriptbytes[begin:end+1], &test)
 		if err != nil {
-			log.Println("unmarshal_winremote:", err)
+			if err.Error() != "invalid character ':' looking for beginning of value" {
+				log.Println(err)
+			}
 		}
 		test.Use = true
-		fmt.Println(test)
-		return WinLocal{Use: false}, test
+
+		return WinLocal{Use: false}, test, Web{Use: false}
+	case "Web":
+		test := Web{}
+		err := json.Unmarshal(scriptbytes[begin:end+1], &test)
+		if err != nil {
+			if err.Error() != "invalid character ':' looking for beginning of value" {
+				log.Println(err)
+			}
+		}
+		test.Use = true
+
+		return WinLocal{Use: false}, WinRemote{Use: false}, test
 	}
 	return
 }
 
-func getjson(in []byte, scrtype string) (winlocal WinLocal, winremote WinRemote) {
+func getjson(in []byte, scrtype string) (winlocal WinLocal, winremote WinRemote, web Web) {
 	begin := bytes.Index(in, []byte("{"))
 	end := bytes.Index(in, []byte("}"))
 	fmt.Println("getjson", string(in[begin:end+1]))
@@ -167,8 +197,8 @@ func getjson(in []byte, scrtype string) (winlocal WinLocal, winremote WinRemote)
 			log.Println(err)
 		}
 		test.Use = true
-		fmt.Println(test)
-		return test, WinRemote{Use: false}
+
+		return test, WinRemote{Use: false}, Web{Use: false}
 	case "WinRemote":
 		test := WinRemote{}
 		err := json.Unmarshal(in[begin:end+1], &test)
@@ -176,8 +206,17 @@ func getjson(in []byte, scrtype string) (winlocal WinLocal, winremote WinRemote)
 			log.Println(err)
 		}
 		test.Use = true
-		fmt.Println(test)
-		return WinLocal{Use: false}, test
+
+		return WinLocal{Use: false}, test, Web{Use: false}
+	case "Web":
+		test := Web{}
+		err := json.Unmarshal(in[begin:end+1], &test)
+		if err != nil {
+			log.Println(err)
+		}
+		test.Use = true
+
+		return WinLocal{Use: false}, WinRemote{Use: false}, test
 	}
 	return
 }
@@ -210,4 +249,20 @@ type WinRemote struct {
 	Rhost    string `json:"Rhost"`
 	Rport    string `json:"Rport"`
 	Hostname string `json:"Hostname"`
+}
+
+//Web holds options for web scripts
+type Web struct {
+	Use       bool   `json:"Use"`
+	NodeID    string `json:"NodeID"`
+	Username  string `json:"Username"`
+	Password  string `json:"Password"`
+	URL       string `json:"Domain"`
+	Cmd       string `json:"Cmd"`
+	Lhost     string `json:"Lhost"`
+	Lport     string `json:"Lport"`
+	Rhost     string `json:"Rhost"`
+	Rport     string `json:"Rport"`
+	Hostname  string `json:"Hostname"`
+	Directory string `json:"Directory"`
 }
