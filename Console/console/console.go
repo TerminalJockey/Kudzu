@@ -58,8 +58,8 @@ func ParseCLI(input string) {
 		case "<kudzu scripts> ":
 			fmt.Println("run: executes kudzu script")
 			fmt.Println("	usage: run hello.kzs")
-			fmt.Println("info: displays kudzu script info")
-			fmt.Println("	usage: info hello.kzs")
+			fmt.Println("load: loads kudzu script for use and prints options")
+			fmt.Println("	usage: load hello.kzs")
 			fmt.Println("ls/list: lists scripts available")
 			fmt.Println("	usage: list")
 		case "<kudzu implants> ":
