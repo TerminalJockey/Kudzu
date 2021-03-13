@@ -14,10 +14,14 @@ import (
 
 var cltag = "<kudzu> "
 var curscript = ""
-var scropts scripts.ScriptOps
+
+//var scropts scripts.ScriptOps
 var winlocalopts scripts.WinLocal
 var winremoteopts scripts.WinRemote
+var linlocalopts scripts.LinuxLocal
+var linremoteopts scripts.LinuxRemote
 var webopts scripts.Web
+var compileandrun scripts.CompileAndRun
 var nodeopts nodes.NodeOpts = nodes.NodeOpts{
 	NodeType: "tcp",
 	Port:     "7896",
@@ -148,7 +152,19 @@ func ParseCLI(input string) {
 			if winremoteopts.Use == true {
 				scripts.ScriptRun(winremoteopts, sep...)
 			}
-			scripts.ScriptRun(scropts, sep...)
+			if webopts.Use == true {
+				scripts.ScriptRun(webopts, sep...)
+			}
+			if linlocalopts.Use == true {
+				scripts.ScriptRun(linlocalopts, sep...)
+			}
+			if linremoteopts.Use == true {
+				scripts.ScriptRun(linremoteopts, sep...)
+			}
+			if compileandrun.Use == true {
+				scripts.ScriptCompileAndRun(compileandrun, sep...)
+			}
+			//scripts.ScriptRun(scropts, sep...)
 		//start listener with given options
 		case "<kudzu nodes> ":
 			if len(sep) != 1 {
@@ -188,7 +204,7 @@ func ParseCLI(input string) {
 		case "<kudzu scripts> ":
 			if len(sep) == 2 && sep[1] != "" {
 				curscript = sep[1]
-				winlocalopts, winremoteopts, webopts = scripts.GetJsonStruct(sep[1])
+				winlocalopts, winremoteopts, webopts, linlocalopts, linremoteopts, compileandrun = scripts.GetJsonStruct(sep[1])
 			}
 		}
 	//set options for element
@@ -222,6 +238,14 @@ func ParseCLI(input string) {
 					winlocalopts.Lhost = sep[2]
 				} else if winremoteopts.Use == true {
 					winremoteopts.Lhost = sep[2]
+				} else if webopts.Use == true {
+					webopts.Lhost = sep[2]
+				} else if linlocalopts.Use == true {
+					linlocalopts.Lhost = sep[2]
+				} else if linremoteopts.Use == true {
+					linremoteopts.Lhost = sep[2]
+				} else if compileandrun.Use == true {
+					compileandrun.Lhost = sep[2]
 				}
 
 			case "RHOST", "Rhost", "rhost":
@@ -229,56 +253,150 @@ func ParseCLI(input string) {
 					winlocalopts.Rhost = sep[2]
 				} else if winremoteopts.Use == true {
 					winremoteopts.Rhost = sep[2]
+				} else if webopts.Use == true {
+					webopts.Rhost = sep[2]
+				} else if linlocalopts.Use == true {
+					linlocalopts.Rhost = sep[2]
+				} else if linremoteopts.Use == true {
+					linremoteopts.Rhost = sep[2]
+				} else if compileandrun.Use == true {
+					compileandrun.Rhost = sep[2]
 				}
-			case "CMD", "cmd":
-				cmdarr := sep[2:]
-				scropts.CMD = strings.Join(cmdarr, " ")
+
+			case "CMD", "cmd", "Cmd":
+				//cmdarr := sep[2:]
+				//scropts.CMD = strings.Join(cmdarr, " ")
 				if winlocalopts.Use == true {
 					winlocalopts.Cmd = strings.Join(sep[2:], " ")
 				} else if winremoteopts.Use == true {
 					winremoteopts.Cmd = strings.Join(sep[2:], " ")
+				} else if webopts.Use == true {
+					webopts.Cmd = strings.Join(sep[2:], " ")
+				} else if linlocalopts.Use == true {
+					linlocalopts.Cmd = strings.Join(sep[2:], " ")
+				} else if linremoteopts.Use == true {
+					linremoteopts.Cmd = strings.Join(sep[2:], " ")
+				} else if compileandrun.Use == true {
+					compileandrun.Cmd = sep[2]
 				}
+
 			case "LPORT", "lport", "Lport":
 				if winlocalopts.Use == true {
 					winlocalopts.Lport = sep[2]
 				} else if winremoteopts.Use == true {
 					winremoteopts.Lport = sep[2]
+				} else if webopts.Use == true {
+					webopts.Lport = sep[2]
+				} else if linlocalopts.Use == true {
+					linlocalopts.Lport = sep[2]
+				} else if linremoteopts.Use == true {
+					linremoteopts.Lport = sep[2]
+				} else if compileandrun.Use == true {
+					compileandrun.Lport = sep[2]
 				}
 			case "RPORT", "rport", "Rport":
 				if winlocalopts.Use == true {
 					winlocalopts.Rport = sep[2]
 				} else if winremoteopts.Use == true {
 					winremoteopts.Rport = sep[2]
+				} else if webopts.Use == true {
+					webopts.Rport = sep[2]
+				} else if linlocalopts.Use == true {
+					linlocalopts.Rport = sep[2]
+				} else if linremoteopts.Use == true {
+					linremoteopts.Rport = sep[2]
+				} else if compileandrun.Use == true {
+					compileandrun.Rport = sep[2]
 				}
 			case "Domain", "domain", "DOMAIN":
 				if winlocalopts.Use == true {
 					winlocalopts.Domain = sep[2]
 				} else if winremoteopts.Use == true {
 					winremoteopts.Domain = sep[2]
+				} else if compileandrun.Use == true {
+					compileandrun.Domain = sep[2]
 				}
 			case "Username", "username", "USERNAME":
 				if winlocalopts.Use == true {
 					winlocalopts.Username = sep[2]
 				} else if winremoteopts.Use == true {
 					winremoteopts.Username = sep[2]
+				} else if webopts.Use == true {
+					webopts.Username = sep[2]
+				} else if linlocalopts.Use == true {
+					linlocalopts.Username = sep[2]
+				} else if linremoteopts.Use == true {
+					linremoteopts.Username = sep[2]
+				} else if compileandrun.Use == true {
+					compileandrun.Username = sep[2]
 				}
 			case "Password", "password", "PASSWORD":
 				if winlocalopts.Use == true {
 					winlocalopts.Password = sep[2]
 				} else if winremoteopts.Use == true {
 					winremoteopts.Password = sep[2]
+				} else if webopts.Use == true {
+					webopts.Password = sep[2]
+				} else if linlocalopts.Use == true {
+					linlocalopts.Password = sep[2]
+				} else if linremoteopts.Use == true {
+					linremoteopts.Password = sep[2]
+				} else if compileandrun.Use == true {
+					compileandrun.Password = sep[2]
 				}
 			case "NodeID", "Nodeid", "nodeid", "NODEID":
 				if winlocalopts.Use == true {
 					winlocalopts.NodeID = sep[2]
 				} else if winremoteopts.Use == true {
 					winremoteopts.NodeID = sep[2]
+				} else if webopts.Use == true {
+					webopts.NodeID = sep[2]
+				} else if linlocalopts.Use == true {
+					linlocalopts.NodeID = sep[2]
+				} else if linremoteopts.Use == true {
+					linremoteopts.NodeID = sep[2]
+				} else if compileandrun.Use == true {
+					compileandrun.NodeID = sep[2]
 				}
 			case "Hostname", "HOSTNAME", "HostName":
 				if winlocalopts.Use == true {
 					winlocalopts.Hostname = sep[2]
 				} else if winremoteopts.Use == true {
 					winremoteopts.Hostname = sep[2]
+				} else if webopts.Use == true {
+					webopts.Hostname = sep[2]
+				} else if linlocalopts.Use == true {
+					linlocalopts.Hostname = sep[2]
+				} else if linremoteopts.Use == true {
+					linremoteopts.Hostname = sep[2]
+				} else if compileandrun.Use == true {
+					compileandrun.Hostname = sep[2]
+				}
+			case "Dir", "directory", "Directory", "dir":
+				if winlocalopts.Use == true {
+					winlocalopts.Directory = sep[2]
+				} else if winremoteopts.Use == true {
+					winremoteopts.Directory = sep[2]
+				} else if webopts.Use == true {
+					webopts.Directory = sep[2]
+				} else if linlocalopts.Use == true {
+					linlocalopts.Directory = sep[2]
+				} else if linremoteopts.Use == true {
+					linremoteopts.Directory = sep[2]
+				} else if compileandrun.Use == true {
+					compileandrun.Directory = sep[2]
+				}
+			case "Filename", "filename", "FileName":
+				if winlocalopts.Use == true {
+					winlocalopts.Filename = sep[2]
+				} else if winremoteopts.Use == true {
+					winremoteopts.Filename = sep[2]
+				} else if linlocalopts.Use == true {
+					linlocalopts.Filename = sep[2]
+				} else if linremoteopts.Use == true {
+					linremoteopts.Filename = sep[2]
+				} else if compileandrun.Use == true {
+					compileandrun.Filename = sep[2]
 				}
 			}
 		//manage node options struct
@@ -339,14 +457,28 @@ func ParseCLI(input string) {
 			fmt.Println("Address:", nodeopts.Addr)
 			fmt.Println("Port:", nodeopts.Port)
 		case "<kudzu scripts> ":
-			fmt.Println("lhost:", scropts.LHOST)
-			fmt.Println("lport:", scropts.LPORT)
-			fmt.Println("rhost:", scropts.RHOST)
-			fmt.Println("rport:", scropts.RPORT)
-			fmt.Println("cmd:", scropts.CMD)
-			fmt.Println("testing--")
-			fmt.Printf("winlocal: %+v\n", winlocalopts)
-			fmt.Printf("winremote: %+v\n", winremoteopts)
+			// fmt.Println("lhost:", scropts.LHOST)
+			// fmt.Println("lport:", scropts.LPORT)
+			// fmt.Println("rhost:", scropts.RHOST)
+			// fmt.Println("rport:", scropts.RPORT)
+			// fmt.Println("cmd:", scropts.CMD)
+			// fmt.Println("testing--")
+			// fmt.Printf("winlocal: %+v\n", winlocalopts)
+			// fmt.Printf("winremote: %+v\n", winremoteopts)
+			switch true {
+			case linlocalopts.Use:
+				fmt.Printf("%+v\n", linlocalopts)
+			case linremoteopts.Use:
+				fmt.Printf("%+v\n", linremoteopts)
+			case winlocalopts.Use:
+				fmt.Printf("%+v\n", winlocalopts)
+			case winremoteopts.Use:
+				fmt.Printf("%+v\n", winremoteopts)
+			case webopts.Use:
+				fmt.Printf("%+v\n", webopts)
+			case compileandrun.Use:
+				fmt.Printf("%+v\n", compileandrun)
+			}
 		case "<kudzu implants> ":
 			fmt.Println("Filename", implantops.FileName)
 			fmt.Println("ImplantType:", implantops.ImplantType)

