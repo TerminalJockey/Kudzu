@@ -1,10 +1,4 @@
 # Kudzu
-Find a bug? Have an idea for a feature? Need help tweaking scripts? Think this project is horrible? Let me know!
-
-Twitter: @TerminalJockey
-
-Email: TerminalJockey@protonmail.com
-
 ![Alt text](tmp/kudzu1.jpg?raw=true "Title")
 
 Kudzu is a Go based C2 platform with an emphasis on extensibility. 
@@ -14,3 +8,11 @@ It is a lofty goal, especially for a lone coder of dubious skill, but with enoug
 
 Check out the docs for more info:
 <a href="https://docs.kudzu.codes">here</a>
+
+
+Find a bug? Have an idea for a feature? Need help tweaking scripts? Think this project is horrible? Let me know!
+
+Twitter: @TerminalJockey
+
+Email: TerminalJockey@protonmail.com
+
