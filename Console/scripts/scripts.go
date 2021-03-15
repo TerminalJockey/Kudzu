@@ -129,7 +129,6 @@ func ScriptRun(scropts interface{}, input ...string) {
 		if err != nil {
 			log.Println(err)
 		}
-		fmt.Println(cmdbuf.String())
 	}
 }
 

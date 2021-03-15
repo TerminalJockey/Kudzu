@@ -68,9 +68,9 @@ func ParseCLI(input string) {
 			fmt.Println("	usage: list")
 		case "<kudzu implants> ":
 			fmt.Println("setop: sets option for implant")
-			fmt.Println("	options: implanttype (cmd/psh)")
+			fmt.Println("	options: implanttype (cmd/psh/kdzshell_win/sh/cmd_tls/psh_tls/kdzshell_win_tls/sh_tls)")
 			fmt.Println("		    listener (ID)")
-			fmt.Println("		    filename (name of generated implant")
+			fmt.Println("		    filename (name of generated implant)")
 			fmt.Println("	usage: setop <option> <val>")
 			fmt.Println("run: generates implant with given options")
 			fmt.Println("	usage: run")
@@ -82,7 +82,7 @@ func ParseCLI(input string) {
 			fmt.Println("run: starts listener with given options")
 			fmt.Println("	usage: run")
 			fmt.Println("setop: set options for listener")
-			fmt.Println("	options: nodetype (tcp/udp/ntp)")
+			fmt.Println("	options: nodetype (tcp/tcp_tls/udp/ntp)")
 			fmt.Println("		    address/addr (ip of listener)")
 			fmt.Println("			port (port of listener)")
 			fmt.Println("	usage: setop <option> <val>")
@@ -118,6 +118,7 @@ func ParseCLI(input string) {
 					fmt.Println("Listeners:")
 					for _, n := range nodes.Listeners {
 						fmt.Println("ID:", n.ID)
+						fmt.Println("ListenerType:", n.ListenerType)
 						fmt.Println("Addr:", n.Listener.Addr().String()+"\n")
 					}
 					return
@@ -132,6 +133,7 @@ func ParseCLI(input string) {
 			fmt.Println("Listeners:")
 			for _, m := range nodes.Listeners {
 				fmt.Println("ID:", m.ID)
+				fmt.Println("ListenerType:", m.ListenerType)
 				fmt.Println("Addr:", m.Listener.Addr().String()+"\n")
 			}
 		default:
@@ -179,11 +181,19 @@ func ParseCLI(input string) {
 						}
 					}
 					go nodes.SetupTCPNode(nodeopts)
+				case "tcp_tls":
+					for _, x := range nodes.Listeners {
+						if nodeopts.Addr+":"+nodeopts.Port == x.Listener.Addr().String() {
+							fmt.Println("Listener already started!")
+							return
+						}
+					}
+					go nodes.SetupTCPEncNode(nodeopts)
 				}
 			}
 		//generate implant with given options
 		case "<kudzu implants> ":
-			fmt.Println(implantops)
+			fmt.Printf("%+v\n", implantops)
 			fmt.Printf("proceed? Y/N > ")
 			checker := bufio.NewReader(os.Stdin)
 			proceed, err := checker.ReadString('\n')
@@ -403,10 +413,10 @@ func ParseCLI(input string) {
 		case "<kudzu nodes> ":
 			switch sep[1] {
 			case "nodetype", "NodeType":
-				if (sep[2] == "tcp") || (sep[2] == "udp") || (sep[2] == "ntp") {
+				if (sep[2] == "tcp") || (sep[2] == "udp") || (sep[2] == "ntp") || (sep[2] == "tcp_tls") {
 					nodeopts.NodeType = sep[2]
 				} else {
-					fmt.Println("available nodetypes: tcp, udp, ntp")
+					fmt.Println("available nodetypes: tcp, udp, ntp, tcp_tls")
 				}
 			case "address", "addr":
 				if (len(sep) != 3) == true || (strings.Count(sep[2], ".") != 3) {
@@ -443,7 +453,7 @@ func ParseCLI(input string) {
 		case "<kudzu nodes> ":
 			if len(sep) == 2 && sep[1] != "" {
 				fmt.Println("interacting...")
-				nodes.InteractNode(sep[1])
+				nodes.SelectNode(sep[1])
 				return
 			}
 		default:
@@ -453,18 +463,8 @@ func ParseCLI(input string) {
 	case "showops":
 		switch cltag {
 		case "<kudzu nodes> ":
-			fmt.Println("Nodetype:", nodeopts.NodeType)
-			fmt.Println("Address:", nodeopts.Addr)
-			fmt.Println("Port:", nodeopts.Port)
+			fmt.Printf("%+v\n", nodeopts)
 		case "<kudzu scripts> ":
-			// fmt.Println("lhost:", scropts.LHOST)
-			// fmt.Println("lport:", scropts.LPORT)
-			// fmt.Println("rhost:", scropts.RHOST)
-			// fmt.Println("rport:", scropts.RPORT)
-			// fmt.Println("cmd:", scropts.CMD)
-			// fmt.Println("testing--")
-			// fmt.Printf("winlocal: %+v\n", winlocalopts)
-			// fmt.Printf("winremote: %+v\n", winremoteopts)
 			switch true {
 			case linlocalopts.Use:
 				fmt.Printf("%+v\n", linlocalopts)
@@ -480,9 +480,7 @@ func ParseCLI(input string) {
 				fmt.Printf("%+v\n", compileandrun)
 			}
 		case "<kudzu implants> ":
-			fmt.Println("Filename", implantops.FileName)
-			fmt.Println("ImplantType:", implantops.ImplantType)
-			fmt.Println("Listener ID:", implantops.Listener)
+			fmt.Printf("%+v\n", implantops)
 		}
 	//implant management panel
 	case "implants":

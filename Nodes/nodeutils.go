@@ -23,14 +23,14 @@ var Nodes []Node
 
 //Listener holds our listener info
 type Listener struct {
-	ID       string
-	Listener net.Listener
+	ID, ListenerType string
+	Listener         net.Listener
 }
 
 //Listeners is our listener array
 var Listeners []Listener
 
-//GenUID creates pseudorandom 8 char ids
+//GenUID creates pseudorandom 10 char ids
 func GenUID() (uid string) {
 	t := time.Now()
 	str := t.String()
