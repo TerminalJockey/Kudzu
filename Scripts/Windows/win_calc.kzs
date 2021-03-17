@@ -1,6 +1,9 @@
 /*{
+Name: win_calc
 Description: win_calc.kzs will execute calc.exe via exec.Command on windows systems.
 Author: TerminalJockey
+Date: 3/15/2021
+Type:WinRemote
 Options:
 {
     "None":"N/A"
@@ -13,7 +16,6 @@ import "os/exec"
 
 
 func main() {
-    
     cmd := exec.Command("calc.exe")
     cmd.Run()
 }

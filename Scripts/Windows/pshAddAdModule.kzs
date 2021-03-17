@@ -1,0 +1,38 @@
+/*{
+Name: pshAddAdModule
+Author: TerminalJockey
+Date: 3/16/2021
+Description: windows 10 bundles the powershell active directory module as an optional feature, with admin creds you can enable without a restart
+Type:WinRemote
+Options:
+{
+	"Username":"",
+	"Password":"",
+	"Domain":".",
+}
+}*/
+package runner
+
+import (
+    "os/exec"
+    "fmt"
+    "log"
+)
+
+
+
+func RunScript() string {
+
+    var pscript string = `Add-WindowsCapability -Online -Name "Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0"`
+
+    cmd := exec.Command("powershell", pscript)
+    out, err := cmd.CombinedOutput()
+    if err != nil {
+        log.Println(err)
+    }
+    ostr := string(out)
+    ostr = "output:\n" + ostr
+    return ostr
+}
+
+

@@ -1,6 +1,7 @@
 /*{
 Name: psexec
 Author: TerminalJockey
+Date: 3/15/2021
 Description: modifies service executable on target machine, and starts service gaining code execution. Requires valid admin creds.
 Type:WinLocal
 Options:

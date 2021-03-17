@@ -1,0 +1,54 @@
+/*{
+Name: winenum
+Author: TerminalJockey (standing on the shoulders of Harmj0y and the powersploit team)
+Date: 3/16/2021
+Description: basic windows local enumeration, returns output
+Type:WinRemote
+Options:
+{
+	
+}
+}*/
+package runner
+
+import (
+    "os/exec"
+    "fmt"
+    "log"
+)
+
+
+
+func RunScript() string {
+
+    var pscript string = `$ErrorActionPreference = "SilentlyContinue"
+Add-Type -AssemblyName System.DirectoryServices.AccountManagement
+$Domain = [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain()
+echo "Domain Info:" $Domain
+$Av = Get-WmiObject -namespace root\SecurityCenter2 -class Antivirusproduct
+echo "AV Info:" $Av
+$curuser = whoami /all
+echo "Current User:" $curuser
+$localusers = net user
+echo "Local Users:" $localusers
+$localgroups = net localgroup
+$domgroups = net group /domain
+echo "Localgroups:" $localgroups
+echo "Domaingroups:" $domgroups
+$schtasks = Get-ScheduledTask -TaskName "*"
+echo "Scheduled Tasks:" $schtasks
+$unqot = wmic service get name,pathname,displayname,startmode | findstr /i auto | findstr /i /v "C:\\Windows\\" | findstr /i /v '"'
+echo "Unquoted Service Paths:" $unqot
+echo "done"`
+
+    cmd := exec.Command("powershell", pscript)
+    out, err := cmd.CombinedOutput()
+    if err != nil {
+        log.Println(err)
+    }
+    ostr := string(out)
+    ostr = "output:\n" + ostr
+    return ostr
+}
+
+

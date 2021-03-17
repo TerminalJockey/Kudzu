@@ -139,6 +139,74 @@ func ParseCLI(input string) {
 		default:
 			fmt.Println("use from agents, nodes, or scripts menu")
 		}
+	case "runremote":
+		switch cltag {
+		case "<kudzu scripts> ":
+			if len(sep) != 2 {
+				fmt.Println("load a script using load <scriptname>, set your options, then fire away!")
+				fmt.Println("usage: runremote <scriptname>")
+				return
+			}
+			if winlocalopts.Use == true {
+				scripts.ScriptSend(sep[1], winlocalopts.NodeID, winlocalopts)
+			}
+			if winremoteopts.Use == true {
+				scripts.ScriptSend(sep[1], winremoteopts.NodeID, winremoteopts)
+			}
+			if webopts.Use == true {
+				scripts.ScriptSend(sep[1], webopts.NodeID, webopts)
+			}
+			if linlocalopts.Use == true {
+				scripts.ScriptSend(sep[1], linlocalopts.NodeID, linlocalopts)
+			}
+			if linremoteopts.Use == true {
+				scripts.ScriptSend(sep[1], linremoteopts.NodeID, linremoteopts)
+			}
+		default:
+			fmt.Println("use from scripts menu with a kudzu implant")
+		}
+	case "runwithoutput":
+		switch cltag {
+		case "<kudzu scripts> ":
+			if len(sep) != 2 {
+				fmt.Println("load a script using load <scriptname>, set your options, then fire away!")
+				fmt.Println("usage: runremote <scriptname>")
+				return
+			}
+			if winlocalopts.Use == true {
+				scripts.ScriptSendandReturn(sep[1], winlocalopts.NodeID, winlocalopts)
+				fmt.Println("interacting...")
+				nodes.SelectNode(winlocalopts.NodeID)
+				return
+			}
+			if winremoteopts.Use == true {
+				scripts.ScriptSendandReturn(sep[1], winremoteopts.NodeID, winremoteopts)
+				fmt.Println("interacting...")
+				nodes.SelectNode(winremoteopts.NodeID)
+				return
+			}
+			if webopts.Use == true {
+				scripts.ScriptSendandReturn(sep[1], webopts.NodeID, webopts)
+				fmt.Println("interacting...")
+				nodes.SelectNode(webopts.NodeID)
+				return
+
+			}
+			if linlocalopts.Use == true {
+				scripts.ScriptSendandReturn(sep[1], linlocalopts.NodeID, linlocalopts)
+				fmt.Println("interacting...")
+				nodes.SelectNode(linlocalopts.NodeID)
+				return
+			}
+			if linremoteopts.Use == true {
+				scripts.ScriptSendandReturn(sep[1], linremoteopts.NodeID, linremoteopts)
+				fmt.Println("interacting...")
+				nodes.SelectNode(linremoteopts.NodeID)
+				return
+			}
+		default:
+			fmt.Println("use from scripts menu with a kudzu implant")
+		}
 	//execute element
 	case "run", "execute":
 		switch cltag {

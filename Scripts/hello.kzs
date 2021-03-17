@@ -16,9 +16,9 @@ import "fmt"
 
 func main() {
 	fmt.Println("Hello from kudzu!")
-    a := "{{.LHOST}}"
+    a := "{{.Lhost}}"
     fmt.Println(a)
-    fmt.Println("{{.RHOST}}")
-    test := "{{.CMD}}"
-    fmt.Println("CMD:", test)
+    fmt.Println("{{.Lhost}}")
+    test := "{{.Cmd}}"
+    fmt.Println("Cmd:", test)
 }

@@ -1,7 +1,8 @@
 /*{
-Name: psexec
+Name: regpersist
 Author: TerminalJockey
-Description: modifies service executable on target machine, and starts service gaining code execution.Requires valid admin creds.
+Description: modifies registry to execute provided binary at startup. Include full path.
+Date: 3/15/2021
 Options:
 {
 	"Cmd":"calc.exe"

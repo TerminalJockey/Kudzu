@@ -2,6 +2,8 @@ package scripts
 
 import (
 	"bytes"
+	"crypto/sha1"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -10,6 +12,7 @@ import (
 	"os/exec"
 	"strings"
 	"text/template"
+	"time"
 
 	nodes "github.com/TerminalJockey/Kudzu/Nodes"
 	"github.com/traefik/yaegi/interp"
@@ -70,7 +73,7 @@ func ScriptCompileAndRun(scropts interface{}, input ...string) {
 		tmplbuf := new(bytes.Buffer)
 		tmpl, err := template.New("").Parse(string(scriptbytes))
 		tmpl.Execute(tmplbuf, scropts)
-		tmpdir := "tmp/" + nodes.GenUID() + ".go"
+		tmpdir := "tmp/" + GenUID() + ".go"
 		tmpfile, err := os.Create(tmpdir)
 
 		if err != nil {
@@ -128,6 +131,66 @@ func ScriptRun(scropts interface{}, input ...string) {
 		_, err = i.Eval(string(tmplbuf.Bytes()))
 		if err != nil {
 			log.Println(err)
+		}
+	}
+}
+
+//ScriptSend populates a script with a given struct and sends it to a node for processing
+func ScriptSend(scriptname, NodeID string, scropts interface{}) {
+	scriptbytes, err := os.ReadFile("Scripts/" + scriptname)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	tmplbuf := new(bytes.Buffer)
+	tmpl, err := template.New("").Parse(string(scriptbytes))
+	if err != nil {
+		log.Println(err)
+	}
+	tmpl.Execute(tmplbuf, scropts)
+
+	encodedscript := base64.RawStdEncoding.EncodeToString(tmplbuf.Bytes())
+	for i := range nodes.Nodes {
+		if nodes.Nodes[i].NodeOpts.ID == NodeID {
+			fmt.Printf("running %s on Node: %s with options %+v\n", scriptname, NodeID, scropts)
+			_, err = nodes.Nodes[i].Conn.Write([]byte("runscript\n"))
+			if err != nil {
+				log.Println(err)
+			}
+			_, err = nodes.Nodes[i].Conn.Write([]byte(encodedscript + "\n"))
+			if err != nil {
+				log.Println(err)
+			}
+		}
+	}
+}
+
+//ScriptSendandReturn populates a script with a given struct and sends it to a node for processing
+func ScriptSendandReturn(scriptname, NodeID string, scropts interface{}) {
+	scriptbytes, err := os.ReadFile("Scripts/" + scriptname)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	tmplbuf := new(bytes.Buffer)
+	tmpl, err := template.New("").Parse(string(scriptbytes))
+	if err != nil {
+		log.Println(err)
+	}
+	tmpl.Execute(tmplbuf, scropts)
+
+	encodedscript := base64.RawStdEncoding.EncodeToString(tmplbuf.Bytes())
+	for i := range nodes.Nodes {
+		if nodes.Nodes[i].NodeOpts.ID == NodeID {
+			fmt.Printf("running %s on Node: %s with options %+v\n", scriptname, NodeID, scropts)
+			_, err = nodes.Nodes[i].Conn.Write([]byte("runwithoutput\n"))
+			if err != nil {
+				log.Println(err)
+			}
+			_, err = nodes.Nodes[i].Conn.Write([]byte(encodedscript + "\n"))
+			if err != nil {
+				log.Println(err)
+			}
 		}
 	}
 }
@@ -336,4 +399,13 @@ type CompileAndRun struct {
 	Hostname  string `json:"Hostname"`
 	Directory string `json:"Directory"`
 	Filename  string `json:"Filename"`
+}
+
+func GenUID() (uid string) {
+	t := time.Now()
+	str := t.String()
+	h := sha1.New()
+	h.Write([]byte(str))
+	uid = fmt.Sprintf("%x", h.Sum(nil))
+	return string([]byte(uid[:10]))
 }
