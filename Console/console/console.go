@@ -66,6 +66,11 @@ func ParseCLI(input string) {
 			fmt.Println("	usage: load hello.kzs")
 			fmt.Println("ls/list: lists scripts available")
 			fmt.Println("	usage: list")
+			fmt.Println("runscript: sends script to provided node for execution")
+			fmt.Println("	usage: runscript Windows/win_calc.kzs")
+			fmt.Println("runwithoutput: sends script to provided node, executes, and enters node shell")
+			fmt.Println("	usage: runwithoutput Windows/winenum.kzs")
+			fmt.Println("	^ only available on kdzshells ^")
 		case "<kudzu implants> ":
 			fmt.Println("setop: sets option for implant")
 			fmt.Println("	options: implanttype (cmd/psh/kdzshell_win/sh/cmd_tls/psh_tls/kdzshell_win_tls/sh_tls)")
