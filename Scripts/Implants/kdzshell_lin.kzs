@@ -1,5 +1,5 @@
 /*{
-Description: Kudzu shell for Linux. Provides access to kudzu scripts, sh, and bash. This was a bitch to make.
+Description: Kudzu shell for Linux. Provides access to kudzu scripts, sh, and bash.
 Author: TerminalJockey
 Options:
 LHOST
