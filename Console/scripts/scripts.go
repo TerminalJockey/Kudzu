@@ -350,6 +350,7 @@ type Web struct {
 	Rport     string `json:"Rport"`
 	Hostname  string `json:"Hostname"`
 	Directory string `json:"Directory"`
+	Filename  string `json:"Filename"`
 }
 
 //LinuxLocal holds options for local linux scripts

@@ -15,7 +15,6 @@ import (
 var cltag = "<kudzu> "
 var curscript = ""
 
-//var scropts scripts.ScriptOps
 var winlocalopts scripts.WinLocal
 var winremoteopts scripts.WinRemote
 var linlocalopts scripts.LinuxLocal
@@ -239,7 +238,6 @@ func ParseCLI(input string) {
 			if compileandrun.Use == true {
 				scripts.ScriptCompileAndRun(compileandrun, sep...)
 			}
-			//scripts.ScriptRun(scropts, sep...)
 		//start listener with given options
 		case "<kudzu nodes> ":
 			if len(sep) != 1 {
@@ -347,8 +345,6 @@ func ParseCLI(input string) {
 				}
 
 			case "CMD", "cmd", "Cmd":
-				//cmdarr := sep[2:]
-				//scropts.CMD = strings.Join(cmdarr, " ")
 				if winlocalopts.Use == true {
 					winlocalopts.Cmd = strings.Join(sep[2:], " ")
 				} else if winremoteopts.Use == true {
@@ -480,6 +476,8 @@ func ParseCLI(input string) {
 					linremoteopts.Filename = sep[2]
 				} else if compileandrun.Use == true {
 					compileandrun.Filename = sep[2]
+				} else if webopts.Use == true {
+					webopts.Filename = sep[2]
 				}
 			}
 		//manage node options struct
